@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05080a">
+<title>OSS MAINFRAME — Ocean Surveillance Services</title>
+<style>
+/* ============================================================
+   OCEAN SURVEILLANCE SERVICES — FLEET COMMAND MAINFRAME
+   Single-file tactical interface · Simulation core v1.0
+   ============================================================ */
+:root{
+  --bg:#05080a; --bg2:#080d12; --panel:#0b1218; --panel2:#0e1721;
+  --line:#16242f; --line2:#1d3040;
+  --ink:#cfe4ee; --dim:#6f8593; --faint:#43545f;
+  --ok:#19e6a4; --okdim:#0e7d5c;
+  --cyan:#34d6ff; --amber:#ffb020; --red:#ff3b4e; --gold:#ffd23f;
+  --tuna:#ffcf3a; --prize:#ff7a1a;
+  --mono:'SF Mono','JetBrains Mono','Roboto Mono',ui-monospace,Consolas,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --glow:0 0 0 1px rgba(25,230,164,.0), 0 0 24px rgba(25,230,164,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 800px at 70% -10%, rgba(52,214,255,.05), transparent 60%),
+    radial-gradient(1000px 700px at 0% 110%, rgba(25,230,164,.04), transparent 55%),
+    var(--bg);
+  color:var(--ink); font-family:var(--mono); font-size:13px; line-height:1.4;
+  overflow:hidden; letter-spacing:.2px;
+  -webkit-font-smoothing:antialiased;
+}
+/* scanline / CRT veneer */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.06) 3px);
+  mix-blend-mode:overlay; opacity:.5;
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1c2c38;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:#26404f}
+
+/* ============ LAYOUT ============ */
+#app{display:grid; grid-template-rows:48px 1fr 150px; height:100vh; height:100dvh}
+#topbar{
+  display:flex; align-items:center; gap:16px; padding:0 16px;
+  background:linear-gradient(180deg,#0a131b,#070d12);
+  border-bottom:1px solid var(--line2);
+  box-shadow:0 1px 0 rgba(52,214,255,.06);
+}
+#mid{display:grid; grid-template-columns:288px 1fr 320px; overflow:hidden; min-height:0}
+#bottom{border-top:1px solid var(--line2); display:grid; grid-template-columns:1fr 360px; overflow:hidden; min-height:0; background:var(--bg2)}
+
+.col{display:flex; flex-direction:column; min-height:0; overflow:hidden}
+#leftcol{border-right:1px solid var(--line); background:linear-gradient(180deg,#0a1016,#070b0f)}
+#rightcol{border-left:1px solid var(--line); background:linear-gradient(180deg,#0a1016,#070b0f)}
+#centercol{position:relative; background:#04070a}
+
+/* ============ TOPBAR ============ */
+.brand{display:flex; align-items:center; gap:10px; min-width:230px}
+.logo{
+  width:30px;height:30px;border-radius:5px; position:relative; flex:none;
+  background:radial-gradient(circle at 30% 30%, #19e6a4, #0a3a2c);
+  box-shadow:0 0 14px rgba(25,230,164,.5), inset 0 0 8px rgba(0,0,0,.4);
+}
+.logo::before{content:"";position:absolute;inset:7px;border:1.5px solid #04221a;border-radius:50%}
+.logo::after{content:"";position:absolute;left:50%;top:7px;bottom:7px;width:1.5px;background:#04221a;transform:translateX(-50%)}
+.brand h1{font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:2px;line-height:1}
+.brand .sub{font-size:9px;color:var(--dim);letter-spacing:3px;margin-top:3px}
+
+.tb-sep{width:1px;height:26px;background:var(--line2)}
+.tb-stat{display:flex;flex-direction:column;line-height:1.1;min-width:64px}
+.tb-stat .k{font-size:8.5px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase}
+.tb-stat .v{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.tb-stat .v.ok{color:var(--ok)} .tb-stat .v.gold{color:var(--gold)} .tb-stat .v.cyan{color:var(--cyan)} .tb-stat .v.amber{color:var(--amber)}
+
+#clock{margin-left:auto;text-align:right;line-height:1.1}
+#clock .utc{font-size:15px;font-weight:700;letter-spacing:1px;font-variant-numeric:tabular-nums}
+#clock .date{font-size:9px;color:var(--dim);letter-spacing:2px}
+
+.simctl{display:flex;align-items:center;gap:6px}
+.btn{
+  font-family:var(--mono);font-size:11px;letter-spacing:.5px;
+  background:#10202a;border:1px solid var(--line2);color:var(--ink);
+  padding:6px 11px;border-radius:4px;cursor:pointer;transition:.12s; white-space:nowrap;
+}
+.btn:hover{background:#163040;border-color:#2b4a5c}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#13a37a,#0c6e52);border-color:#16c294;color:#eafff6;font-weight:700}
+.btn.primary:hover{background:linear-gradient(180deg,#16c294,#0e8062)}
+.btn.warn{border-color:#5a3a12;color:var(--amber)}
+.btn.danger{border-color:#5a1620;color:var(--red)}
+.btn.sm{padding:4px 8px;font-size:10px}
+.btn.on{box-shadow:inset 0 0 0 1px var(--ok), 0 0 12px rgba(25,230,164,.35)}
+.speedwrap{display:flex;border:1px solid var(--line2);border-radius:4px;overflow:hidden}
+.speedwrap .btn{border:none;border-radius:0;border-right:1px solid var(--line);padding:6px 9px}
+.speedwrap .btn:last-child{border-right:none}
+.speedwrap .btn.on{background:#13384a;color:var(--cyan);box-shadow:none}
+
+/* ============ PANEL CHROME ============ */
+.phdr{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--line);background:rgba(255,255,255,.012);
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);font-weight:600;
+}
+.phdr .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.phdr .count{margin-left:auto;color:var(--ink);font-weight:700;letter-spacing:1px}
+.scroll{overflow-y:auto;flex:1;min-height:0}
+
+/* ============ FLEET ROSTER ============ */
+.fleet-tools{display:flex;gap:6px;padding:7px 10px;border-bottom:1px solid var(--line)}
+.fleet-tools .btn{flex:1;text-align:center}
+.drone{
+  display:grid;grid-template-columns:30px 1fr auto;gap:9px;align-items:center;
+  padding:8px 11px;border-bottom:1px solid #0e1820;cursor:pointer;position:relative;
+  transition:background .1s;
+}
+.drone:hover{background:rgba(52,214,255,.04)}
+.drone.sel{background:linear-gradient(90deg,rgba(25,230,164,.10),transparent);}
+.drone.sel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.dicon{
+  width:30px;height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;position:relative;border:1px solid var(--line2);background:#0a141b;
+}
+.dicon svg{width:18px;height:18px}
+.dmeta{min-width:0}
+.dmeta .id{font-weight:700;font-size:12px;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.dmeta .role{font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dright{text-align:right;line-height:1.25}
+.statetag{font-size:9px;font-weight:700;letter-spacing:.8px;padding:1px 5px;border-radius:3px;display:inline-block}
+.batt{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:3px;font-size:10px;font-variant-numeric:tabular-nums}
+.battbar{width:34px;height:5px;border-radius:2px;background:#152028;overflow:hidden;border:1px solid #1c2c36}
+.battbar i{display:block;height:100%;border-radius:2px}
+
+/* state colors */
+.s-PATROL{color:var(--cyan)} .bg-PATROL{background:rgba(52,214,255,.14);color:var(--cyan)}
+.s-TRACKING{color:var(--gold)} .bg-TRACKING{background:rgba(255,210,63,.16);color:var(--gold)}
+.s-RTB{color:var(--amber)} .bg-RTB{background:rgba(255,176,32,.15);color:var(--amber)}
+.s-CHARGING{color:var(--ok)} .bg-CHARGING{background:rgba(25,230,164,.14);color:var(--ok)}
+.s-STANDBY{color:var(--dim)} .bg-STANDBY{background:rgba(111,133,147,.14);color:var(--dim)}
+.s-OFFLINE{color:var(--red)} .bg-OFFLINE{background:rgba(255,59,78,.14);color:var(--red)}
+
+/* ============ MAP ============ */
+#mapwrap{position:absolute;inset:0}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block}
+.map-hud{position:absolute;pointer-events:none;font-size:10px;color:var(--dim);letter-spacing:1px;text-shadow:0 0 6px #000}
+#hud-tl{top:10px;left:12px}
+#hud-tr{top:10px;right:12px;text-align:right}
+#hud-bl{bottom:10px;left:12px}
+#hud-br{bottom:10px;right:12px;text-align:right}
+.map-hud .hl{color:var(--cyan)} .map-hud .hg{color:var(--gold)} .map-hud .ho{color:var(--ok)}
+.maptitle{font-family:var(--sans);font-weight:800;letter-spacing:3px;font-size:11px;color:var(--ink)}
+#map-tabs{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;pointer-events:auto;z-index:5}
+.maptab{font-size:10px;letter-spacing:1.5px;padding:5px 12px;background:rgba(8,14,18,.8);border:1px solid var(--line2);border-radius:4px;cursor:pointer;color:var(--dim);backdrop-filter:blur(6px)}
+.maptab.on{color:var(--cyan);border-color:#2a5468;box-shadow:0 0 12px rgba(52,214,255,.2)}
+#map-legend{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;max-width:92%;pointer-events:none;font-size:9.5px;color:var(--dim);background:rgba(5,8,10,.55);padding:5px 12px;border-radius:6px;border:1px solid var(--line)}
+.lg{display:flex;align-items:center;gap:5px}
+.lg i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* ============ RIGHT: DRONE DETAIL ============ */
+.detail-empty{padding:30px 18px;text-align:center;color:var(--faint);font-size:11px;line-height:1.8}
+.feed{position:relative;aspect-ratio:16/10;background:#02060a;border-bottom:1px solid var(--line);overflow:hidden}
+.feed canvas,.feed video,.feed img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#02060a}
+.feed-link{position:absolute;bottom:8px;right:10px;z-index:4;padding:3px 8px;font-size:9px;pointer-events:auto}
+.feed-cfg{padding:8px 12px;border-bottom:1px solid var(--line);background:#0a121a}
+.feed-cfg input{width:100%;background:#0c1620;border:1px solid var(--line2);color:var(--ink);font-family:var(--mono);font-size:10px;padding:6px 8px;border-radius:4px;margin-bottom:6px;outline:none}
+.feed-cfg input:focus{border-color:#2b6378}
+.feed-cfg-row{display:flex;gap:6px}
+.feed-cfg-row .btn{flex:1;text-align:center}
+.feed-ov{position:absolute;inset:0;pointer-events:none;font-size:9px;color:var(--ok);letter-spacing:1px}
+.feed-ov .rec{position:absolute;top:8px;left:10px;display:flex;align-items:center;gap:5px;color:var(--red);font-weight:700}
+.feed-ov .rec b{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.feed-ov .fr{position:absolute;top:8px;right:10px;color:var(--ok)}
+.feed-ov .bl{position:absolute;bottom:8px;left:10px}
+.feed-ov .br{position:absolute;bottom:8px;right:10px;text-align:right}
+.feed-mode{position:absolute;top:50%;left:8px;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;pointer-events:auto}
+.feed-mode .btn{padding:2px 6px;font-size:8.5px}
+
+.dt-head{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.dt-head .big{font-size:18px;font-weight:800;letter-spacing:1px}
+.dt-head .mdl{font-size:9.5px;color:var(--dim)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.kv>div{background:var(--panel);padding:7px 12px}
+.kv .k{font-size:8.5px;color:var(--faint);letter-spacing:1.2px;text-transform:uppercase}
+.kv .v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+.dt-actions{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.dt-actions .btn{flex:1;min-width:84px;text-align:center}
+
+.gauge{padding:10px 14px;border-top:1px solid var(--line)}
+.gauge .lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase}
+.gbar{height:7px;border-radius:3px;background:#0e1820;border:1px solid #182832;overflow:hidden}
+.gbar i{display:block;height:100%;transition:width .3s}
+
+/* ============ BOTTOM: LOG + TARGETS ============ */
+#log{font-size:11px}
+.logrow{display:grid;grid-template-columns:62px 70px 1fr;gap:8px;padding:4px 12px;border-bottom:1px solid #0c151c;align-items:baseline}
+.logrow .t{color:var(--faint);font-variant-numeric:tabular-nums}
+.logrow .tag{font-size:9px;font-weight:700;letter-spacing:.5px;text-align:center;padding:1px 0;border-radius:3px}
+.logrow .msg{color:var(--ink)}
+.tag.SYS{background:rgba(111,133,147,.14);color:var(--dim)}
+.tag.DETECT{background:rgba(255,210,63,.16);color:var(--gold)}
+.tag.PRIZE{background:rgba(255,122,26,.2);color:var(--prize)}
+.tag.ALERT{background:rgba(255,59,78,.16);color:var(--red)}
+.tag.OPS{background:rgba(52,214,255,.14);color:var(--cyan)}
+.tag.OK{background:rgba(25,230,164,.14);color:var(--ok)}
+
+#targets .tgt{padding:8px 12px;border-bottom:1px solid #0c151c;cursor:pointer;position:relative}
+#targets .tgt:hover{background:rgba(255,210,63,.05)}
+#targets .tgt.prize{background:linear-gradient(90deg,rgba(255,122,26,.10),transparent)}
+#targets .tgt.prize::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--prize);box-shadow:0 0 10px var(--prize)}
+.tgt-top{display:flex;align-items:center;gap:8px}
+.tgt-top .nm{font-weight:700;font-size:12px}
+.tgt-top .val{margin-left:auto;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.tgt-top .val.prize{color:var(--prize)}
+.tgt-sub{font-size:9.5px;color:var(--dim);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-size:8.5px;font-weight:700;letter-spacing:.5px;padding:1px 5px;border-radius:3px;background:#13202a;color:var(--dim)}
+.chip.prize{background:rgba(255,122,26,.2);color:var(--prize)}
+.chip.lock{background:rgba(25,230,164,.16);color:var(--ok)}
+
+/* tiny conf bar */
+.conf{height:3px;background:#0e1820;border-radius:2px;overflow:hidden;margin-top:4px}
+.conf i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--ok))}
+
+.empty{padding:22px;text-align:center;color:var(--faint);font-size:11px}
+
+/* boot overlay */
+#boot{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:var(--mono)}
+#boot .bl{font-size:11px;color:var(--ok);letter-spacing:1px;width:min(520px,86vw);min-height:150px}
+#boot .bl .l{opacity:0;animation:bootln .01s forwards}
+#boot .bigb{font-family:var(--sans);font-weight:800;letter-spacing:4px;font-size:22px;color:var(--ink);text-shadow:0 0 24px rgba(25,230,164,.4)}
+@keyframes bootln{to{opacity:1}}
+
+/* preferences modal */
+.modal-bg{position:fixed;inset:0;z-index:500;background:rgba(2,5,8,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
+.modal-bg[hidden]{display:none}
+.modal{width:min(470px,92vw);max-height:86vh;overflow:auto;background:linear-gradient(180deg,#0c151d,#080e13);border:1px solid var(--line2);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(25,230,164,.08)}
+.modal-hd{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);font-family:var(--sans);font-weight:800;letter-spacing:2px;font-size:12px;color:var(--ink)}
+.modal-hd .btn{margin-left:auto}
+.modal-body{padding:4px 16px}
+.pref{padding:11px 2px;border-bottom:1px solid #0e1820}
+.pref:last-child{border-bottom:none}
+.pref .top{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.pref .nm{font-size:11px;letter-spacing:.6px;color:var(--ink);font-weight:700}
+.pref .desc{font-size:9px;color:var(--faint)}
+.pref .val{margin-left:auto;font-size:13px;font-weight:800;color:var(--ok);font-variant-numeric:tabular-nums}
+.pref input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;background:#13202a;outline:none;cursor:pointer}
+.pref input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ok);cursor:pointer;box-shadow:0 0 8px rgba(25,230,164,.6);border:2px solid #06140f}
+.pref input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--ok);cursor:pointer;border:2px solid #06140f}
+.toggle{display:flex;gap:10px;align-items:center;cursor:pointer}
+.toggle .sw{width:38px;height:20px;border-radius:11px;background:#1b2a34;position:relative;transition:.15s;flex:none}
+.toggle .sw i{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#5a6e79;transition:.15s}
+.toggle.on .sw{background:rgba(25,230,164,.3)}
+.toggle.on .sw i{left:20px;background:var(--ok)}
+.modal-ft{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+.prefs-note{font-size:9px;color:var(--faint);margin-left:auto;text-align:right}
+
+@media (max-width:1100px){
+  #mid{grid-template-columns:230px 1fr 270px}
+  #bottom{grid-template-columns:1fr 280px}
+}
+@media (max-width:820px){
+  #mid{grid-template-columns:1fr}
+  #leftcol,#rightcol{display:none}
+  .tb-stat{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="bigb">OSS&nbsp;MAINFRAME</div>
+  <div class="bl" id="bootlog"></div>
+</div>
+
+<div id="app" aria-hidden="true">
+
+  <!-- ===== TOP BAR ===== -->
+  <header id="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>OSS MAINFRAME</h1>
+        <div class="sub">OCEAN SURVEILLANCE · FLEET COMMAND</div>
+      </div>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-stat"><span class="k">Fleet Active</span><span class="v ok" id="s-active">0/20</span></div>
+    <div class="tb-stat"><span class="k">Schools Tracked</span><span class="v gold" id="s-schools">0</span></div>
+    <div class="tb-stat"><span class="k">Prize Targets</span><span class="v amber" id="s-prize">0</span></div>
+    <div class="tb-stat"><span class="k">Est. Value Tracked</span><span class="v cyan" id="s-value">$0</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb-stat"><span class="k">Sea State</span><span class="v" id="s-sea">—</span></div>
+    <div class="tb-stat"><span class="k">Mode</span><span class="v ok" id="s-mode">SIM</span></div>
+
+    <div id="clock">
+      <div class="utc" id="clk-time">--:--:--</div>
+      <div class="date" id="clk-date">SIMULATION CLOCK · ZULU</div>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="simctl">
+      <button class="btn primary" id="btn-play">▶ RUN SIM</button>
+      <div class="speedwrap" id="speeds">
+        <button class="btn sm" data-sp="1">1×</button>
+        <button class="btn sm on" data-sp="2">2×</button>
+        <button class="btn sm" data-sp="5">5×</button>
+        <button class="btn sm" data-sp="20">20×</button>
+      </div>
+      <button class="btn warn sm" id="btn-launch">LAUNCH ALL</button>
+      <button class="btn danger sm" id="btn-rtb">RECALL ALL</button>
+      <button class="btn sm" id="btn-prefs" title="Operator preferences">⚙</button>
+    </div>
+  </header>
+
+  <!-- ===== MIDDLE ===== -->
+  <div id="mid">
+    <!-- LEFT: FLEET -->
+    <div class="col" id="leftcol">
+      <div class="phdr"><span class="dot"></span> FLEET ROSTER <span class="count" id="fleet-count">20 UNITS</span></div>
+      <div class="fleet-tools">
+        <button class="btn sm" data-sort="id">ID</button>
+        <button class="btn sm" data-sort="batt">BATT</button>
+        <button class="btn sm" data-sort="state">STATE</button>
+      </div>
+      <div class="scroll" id="fleet"></div>
+    </div>
+
+    <!-- CENTER: MAP -->
+    <div class="col" id="centercol">
+      <div id="mapwrap">
+        <canvas id="map"></canvas>
+        <div id="map-tabs">
+          <div class="maptab on" data-layer="tactical">TACTICAL</div>
+          <div class="maptab" data-layer="thermal">THERMAL</div>
+          <div class="maptab" data-layer="sst">SST</div>
+        </div>
+        <div class="map-hud" id="hud-tl">
+          <div class="maptitle">PACIFIC GRID · SECTOR 7-NORTH</div>
+          <div id="hud-area">AO 412 NM² · DEPTH 18–1400 m</div>
+        </div>
+        <div class="map-hud" id="hud-tr">
+          <div>LAT <span class="hl" id="hud-lat">34.118°N</span></div>
+          <div>LON <span class="hl" id="hud-lon">141.872°E</span></div>
+        </div>
+        <div class="map-hud" id="hud-bl">
+          <div>CAMERA SWATH <span class="ho" id="hud-srange">2.4 km</span></div>
+          <div>SENSOR <span class="ho" id="hud-scan">EO/IR · AI-VISION</span></div>
+          <div>VESSEL <span class="ho" id="hud-vessel">—</span></div>
+        </div>
+        <div class="map-hud" id="hud-br">
+          <div>SST <span class="hl" id="hud-sst">19.4°C</span> · CURRENT <span class="hl" id="hud-cur">1.2 kn</span></div>
+          <div>BIOMASS <span class="hg" id="hud-bio">— t</span></div>
+        </div>
+        <div id="map-legend">
+          <div class="lg"><i style="background:var(--cyan)"></i>Drone</div>
+          <div class="lg"><i style="background:var(--gold)"></i>Tuna School</div>
+          <div class="lg"><i style="background:var(--prize)"></i>Prize Bluefin</div>
+          <div class="lg"><i style="background:var(--ok)"></i>Camera View</div>
+          <div class="lg"><i style="background:#3a5a6a"></i>Patrol Zone</div>
+          <div class="lg"><i style="background:#5ab4dc"></i>Depth Contour</div>
+          <div class="lg"><i style="background:#78c8eb"></i>Current</div>
+          <div class="lg"><i style="background:#19e6a4"></i>◆ Vessel</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: DRONE DETAIL -->
+    <div class="col" id="rightcol">
+      <div class="phdr"><span class="dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></span> UNIT TELEMETRY <span class="count" id="dt-id">—</span></div>
+      <div class="scroll" id="detail">
+        <div class="detail-empty">
+          ◎ NO UNIT SELECTED<br><br>
+          Select a drone from the fleet roster or tap a marker on the tactical map to view live telemetry, sensor feed, and command options.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM ===== -->
+  <div id="bottom">
+    <div class="col">
+      <div class="phdr"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span> EVENT LOG · MISSION FEED <span class="count" id="log-count">0</span></div>
+      <div class="scroll" id="log"></div>
+    </div>
+    <div class="col" style="border-left:1px solid var(--line)">
+      <div class="phdr"><span class="dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></span> TARGET REGISTRY <span class="count" id="tgt-count">0 CONTACTS</span></div>
+      <div class="scroll" id="targets"><div class="empty">No biological contacts. Run the simulation to begin acoustic survey.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OPERATOR PREFERENCES ===== -->
+<div id="prefs-modal" class="modal-bg" hidden>
+  <div class="modal">
+    <div class="modal-hd">⚙ OPERATOR PREFERENCES
+      <button class="btn sm" id="prefs-close">✕ CLOSE</button></div>
+    <div class="modal-body" id="prefs-body"></div>
+    <div class="modal-ft">
+      <button class="btn sm" id="prefs-reset">↺ RESET DEFAULTS</button>
+      <span class="prefs-note">Changes apply live · saved to this device</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   OSS MAINFRAME — SIMULATION CORE
+   ----------------------------------------------------------------------------
+   A self-contained tactical simulation of an autonomous drone fleet performing
+   acoustic + thermal survey of open ocean for bluefin tuna schools. Designed so
+   the SIM data layer can later be swapped for a live DJI / hardware telemetry
+   feed (see SIM_API contract near the bottom). No external dependencies.
+   ============================================================================ */
+'use strict';
+
+/* ---------- math / util ---------- */
+const TAU = Math.PI*2;
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const rint = (a,b)=>Math.floor(rnd(a,b+1));
+const clamp = (v,a,b)=>v<a?a:v>b?b:v;
+const lerp = (a,b,t)=>a+(b-a)*t;
+const pick = a=>a[Math.floor(Math.random()*a.length)];
+const dist = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const fmtMoney = n=>{
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(0)+'K';
+  return '$'+Math.round(n);
+};
+const pad = (n,l=2)=>String(n).padStart(l,'0');
+const compass = b => ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(((b%360)/22.5))%16];
+
+/* ---------- world model ----------
+   The simulation lives in a normalized world space [0..1000] on each axis,
+   independent of canvas pixel size. The renderer maps world->screen each frame. */
+const W = 1000, H = 1000;
+
+/* ---------- bathymetry (static depth field + precomputed depth contours) ----------
+   depthAt() returns seabed depth (m) at a world point: a shelf slope that deepens
+   to the south, plus gaussian seamounts/banks (shallower) and basins/troughs
+   (deeper). Isobaths are extracted once via marching squares and cached. */
+const BATHY = [
+  {x:300,y:280,r:210,a: 560},   // seamount (shallow)
+  {x:835,y:205,r:165,a: 470},   // offshore bank
+  {x:520,y:660,r:205,a: 360},   // ridge
+  {x:735,y:455,r:270,a:-620},   // deep basin
+  {x:150,y:585,r:200,a:-430},   // trough
+  {x:610,y:120,r:150,a:-300},   // canyon head
+];
+function depthAt(x,y){
+  let d = 120 + (y/H)*640;                 // continental shelf, deepens south
+  for(const f of BATHY){
+    const dx=x-f.x, dy=y-f.y;
+    d -= f.a * Math.exp(-(dx*dx+dy*dy)/(2*f.r*f.r));
+  }
+  return clamp(d, 18, 1400);
+}
+const ISO = [150,300,450,600,750,900,1050,1200];
+function buildBathymetry(){
+  const NX=60, NY=60, gx=W/NX, gy=H/NY;
+  const grid=[];
+  for(let j=0;j<=NY;j++){ const row=[]; for(let i=0;i<=NX;i++) row.push(depthAt(i*gx,j*gy)); grid.push(row); }
+  const ix=(p0,p1,v0,v1,lv)=> p0 + (lv-v0)/((v1-v0)||1e-6)*(p1-p0);
+  state.contours = ISO.map(lv=>{
+    const segs=[];
+    for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){
+      const x0=i*gx,y0=j*gy,x1=x0+gx,y1=y0+gy;
+      const a=grid[j][i], b=grid[j][i+1], c=grid[j+1][i+1], d=grid[j+1][i];
+      let id=0; if(a>lv)id|=8; if(b>lv)id|=4; if(c>lv)id|=2; if(d>lv)id|=1;
+      if(id===0||id===15) continue;
+      const T={x:ix(x0,x1,a,b,lv), y:y0};      // top    edge (TL-TR)
+      const R={x:x1, y:ix(y0,y1,b,c,lv)};      // right  edge (TR-BR)
+      const B={x:ix(x0,x1,d,c,lv), y:y1};      // bottom edge (BL-BR)
+      const L={x:x0, y:ix(y0,y1,a,d,lv)};      // left   edge (TL-BL)
+      const E={1:[L,B],2:[B,R],3:[L,R],4:[T,R],5:[[T,L],[B,R]],6:[T,B],7:[T,L],
+               8:[T,L],9:[T,B],10:[[T,R],[B,L]],11:[T,R],12:[L,R],13:[B,R],14:[L,B]}[id];
+      if(id===5||id===10){ segs.push(E[0],E[1]); } else segs.push(E);
+    }
+    return {lv, segs};
+  });
+}
+
+/* ---------- surface current (smooth flow field + drift particles) ----------
+   currentAt() is a static swirly vector field with a mean set toward ENE; it
+   drifts schools strongly, the vessel moderately, and drones slightly, and is
+   visualised by advecting short streak particles across the map. */
+function currentAt(x,y){
+  let vx = Math.cos(y*0.0098) + 0.55*Math.sin(x*0.0076 + 1.3);
+  let vy = Math.sin(x*0.0091) - 0.50*Math.cos(y*0.0085 + 0.6);
+  vx += 0.55; vy -= 0.22;                  // mean set toward ENE
+  return {x:vx, y:vy};
+}
+function initFlow(){
+  state.flow=[];
+  for(let i=0;i<150;i++) state.flow.push({x:rnd(0,W),y:rnd(0,H),px:0,py:0,life:rnd(0,5)});
+}
+
+const DRONE_MODELS = [
+  {m:'DJI M350 RTK',  sensor:'H20T · EO/IR Gimbal',  range:120},
+  {m:'DJI M30T',      sensor:'48MP Zoom + Thermal',  range:100},
+  {m:'DJI M300 RTK',  sensor:'P1 · 45MP Optical',    range:115},
+  {m:'OSS Sentinel-V',sensor:'8K EO/IR + AI Vision', range:150},
+];
+const SPECIES = [
+  {name:'Pacific Bluefin', latin:'Thunnus orientalis', bluefin:true,  baseKg:[180,420], pricePerKg:[120,260]},
+  {name:'Atlantic Bluefin',latin:'Thunnus thynnus',    bluefin:true,  baseKg:[200,460], pricePerKg:[140,300]},
+  {name:'Yellowfin',       latin:'Thunnus albacares',  bluefin:false, baseKg:[30,90],   pricePerKg:[18,42]},
+  {name:'Bigeye',          latin:'Thunnus obesus',     bluefin:false, baseKg:[40,120],  pricePerKg:[22,55]},
+];
+
+const state = {
+  running:false, speed:2, t:0, simClock:0,
+  layer:'tactical',
+  drones:[], schools:[], log:[], selDrone:null, selSchool:null,
+  fleetSort:'id',
+  env:{sst:19.4, current:1.2, seaState:2, biomass:0},
+  nextSchoolAt:6, schoolSeq:0,
+};
+
+/* ---------- operator preferences (live-adjustable + saved to device) ---------- */
+const DEFAULT_PREFS = {
+  fleetSize:12,          // number of drones in the fleet
+  rangeScale:1.0,        // camera detection radius multiplier (all units)
+  classifyThreshold:82,  // confidence % needed to lock a contact
+  autoRtb:18,            // battery % that triggers auto return-to-vessel
+  currentMul:1.0,        // ocean current drift multiplier
+  maxSchools:14,         // concurrent schools in the AO
+  prizeMin:2.8,          // $M floor for a trophy bluefin classification
+  bluefinOnly:false,     // survey bluefin species only
+  showContours:true,     // render bathymetric isobaths
+  showFlow:true,         // animate surface current particles
+};
+state.prefs = Object.assign({}, DEFAULT_PREFS);
+try{ const sv=JSON.parse(localStorage.getItem('oss_prefs')||'null'); if(sv) Object.assign(state.prefs, sv); }catch(e){}
+function savePrefs(){ try{ localStorage.setItem('oss_prefs', JSON.stringify(state.prefs)); }catch(e){} }
+const envCur  = ()=> state.env.current * state.prefs.currentMul;   // effective current
+const effRange = d => d.sensorRange * state.prefs.rangeScale;      // effective sensor range
+
+/* ---------- mothership — a MOVING command vessel; drones home to its live pos ---------- */
+const vessel = { x:W*0.5, y:H*0.86, heading:-Math.PI/2, speed:0.16,
+                 wp:{x:W*0.5,y:H*0.86}, wake:[], wakeAcc:0, name:'OSS PELAGIC' };
+const BASE = vessel;                 // alias: existing fleet logic homes to BASE
+
+/* ---------- fleet init ---------- */
+function initFleet(n=state.prefs.fleetSize){
+  state.drones = [];
+  const cols = Math.min(5, Math.max(1, Math.ceil(Math.sqrt(n))));
+  for(let i=0;i<n;i++){
+    const md = DRONE_MODELS[i%DRONE_MODELS.length];
+    // distribute patrol home positions in a fan grid across the AO
+    const col = i%cols, row=Math.floor(i/cols);
+    const zone = {x: lerp(120,880,cols>1?col/(cols-1):0.5), y: lerp(140,640, Math.min(1,row/2.6))};
+    state.drones.push({
+      id:'DR-'+pad(i+1), idx:i, model:md.m, sensor:md.sensor, sensorRange:md.range,
+      x:BASE.x+rnd(-34,34), y:BASE.y+rnd(-14,14), heading:-Math.PI/2,
+      dock:{dx:rnd(-46,46), dy:rnd(-16,16)},
+      speed:0, targetSpeed:0, maxSpeed:rnd(2.2,3.0),
+      batt: rnd(82,100), state:'STANDBY', zone, wp:{...zone},
+      alt: rint(90,140), signal: rint(92,100), temp: rnd(31,38),
+      track:null, scanPhase:rnd(0,TAU), detected:0, distanceFlown:0,
+      feedType:'sim', feedUrl:'',
+      gps:[34.05+Math.random()*0.2, 141.7+Math.random()*0.25],
+    });
+  }
+}
+function rebuildFleet(){
+  const n=state.prefs.fleetSize;
+  initFleet(n);
+  state.selDrone=null;
+  $('fleet-count').textContent=n+' UNITS';
+  renderFleet(); renderDetail();
+  logEvent('SYS', `Fleet reconfigured · ${n} drones deployed to AO`);
+}
+
+/* ---------- school spawning ---------- */
+function spawnSchool(){
+  const bluefins = SPECIES.filter(s=>s.bluefin);
+  const sp = state.prefs.bluefinOnly ? pick(bluefins)
+           : (Math.random()<0.42 ? pick(bluefins) : pick(SPECIES));
+  const count = sp.bluefin ? rint(20,140) : rint(80,400);
+  const avgKg = rnd(...sp.baseKg);
+  const ppk = rnd(...sp.pricePerKg);
+  // school market value
+  let value = count*avgKg*ppk;
+  // chance of a "prize" specimen in a bluefin school — a record-grade fish
+  let prize=null;
+  if(sp.bluefin && Math.random()<0.5){
+    const lo=state.prefs.prizeMin*1e6;       // trophy bluefin floor (operator-set)
+    const pv = rnd(lo, lo+0.4e6);
+    prize = {kg: rnd(260,460), value: pv};
+    value += pv;
+  }
+  state.schoolSeq++;
+  const id = 'TC-'+pad(state.schoolSeq,3);
+  const s = {
+    id, species:sp, count, avgKg, ppk, value, prize,
+    x:rnd(120,880), y:rnd(120,700), depth:rint(25, sp.bluefin?180:90),
+    heading:rnd(0,TAU), speed:rnd(0.25,0.7), size:Math.sqrt(count)*1.1+8,
+    detected:false, confidence:0, locked:false, trackedBy:null,
+    born:state.simClock, pulse:rnd(0,TAU),
+  };
+  state.schools.push(s);
+  return s;
+}
+
+/* ---------- logging ---------- */
+function logEvent(tag,msg){
+  const hh=pad(Math.floor(state.simClock/3600)%24), mm=pad(Math.floor(state.simClock/60)%60), ss=pad(Math.floor(state.simClock)%60);
+  state.log.unshift({t:`${hh}:${mm}:${ss}`, tag, msg});
+  if(state.log.length>200) state.log.pop();
+  renderLog();
+}
+
+/* ============================================================================
+   SIMULATION STEP  (advances world by dt simulated-seconds)
+   ============================================================================ */
+function step(dt){
+  state.simClock += dt;
+  state.t += dt;
+
+  // env drift
+  state.env.sst = clamp(state.env.sst + rnd(-1,1)*dt*0.02, 17.5, 22);
+  state.env.current = clamp(state.env.current + rnd(-1,1)*dt*0.05, 0.3, 2.4);
+
+  // --- mothership transit (slow nav through the AO, nudged by current) ---
+  {
+    const v=vessel;
+    if(dist(v,v.wp)<46){ v.wp={x:rnd(220,780), y:rnd(560,900)}; }
+    const des=Math.atan2(v.wp.y-v.y, v.wp.x-v.x);
+    let dh=((des-v.heading+Math.PI*3)%TAU)-Math.PI;
+    v.heading += clamp(dh, -dt*0.35, dt*0.35);
+    const cv=currentAt(v.x,v.y), ec=envCur();
+    v.x = clamp(v.x + (Math.cos(v.heading)*v.speed + cv.x*0.10*ec)*dt*7, 60, 940);
+    v.y = clamp(v.y + (Math.sin(v.heading)*v.speed + cv.y*0.10*ec)*dt*7, 540, 950);
+    v.wakeAcc += dt;
+    if(v.wakeAcc>0.4){ v.wakeAcc=0; v.wake.push({x:v.x,y:v.y}); if(v.wake.length>26) v.wake.shift(); }
+  }
+
+  // spawn schools over time
+  state.nextSchoolAt -= dt;
+  if(state.nextSchoolAt<=0 && state.schools.length<state.prefs.maxSchools){
+    spawnSchool();
+    state.nextSchoolAt = rnd(8,22);
+  }
+
+  // move schools (own swimming + advected by current), age them out
+  for(const s of state.schools){
+    s.pulse += dt*3;
+    s.heading += rnd(-1,1)*dt*0.3;
+    const cs=currentAt(s.x,s.y), ec=envCur();
+    s.x += (Math.cos(s.heading)*s.speed + cs.x*0.42*ec)*dt*6;
+    s.y += (Math.sin(s.heading)*s.speed + cs.y*0.42*ec)*dt*6;
+    if(s.x<80||s.x>920) s.heading=Math.PI-s.heading;
+    if(s.y<80||s.y>760) s.heading=-s.heading;
+    s.x=clamp(s.x,80,920); s.y=clamp(s.y,80,760);
+  }
+
+  // drone behavior FSM
+  for(const d of state.drones){
+    d.scanPhase += dt*2;
+    // signal + temp wobble
+    d.signal = clamp(d.signal + rnd(-1,1)*dt*4, 60, 100);
+    d.temp = clamp(d.temp + rnd(-1,1)*dt*1.5, 28, 52);
+
+    if(d.state==='OFFLINE'){ continue; }
+
+    if(d.state==='CHARGING' || d.state==='STANDBY'){
+      // stay docked to the moving vessel (parked on deck)
+      const tx=vessel.x+d.dock.dx, ty=vessel.y+d.dock.dy, k=clamp(dt*1.4,0,1);
+      d.x=lerp(d.x,tx,k); d.y=lerp(d.y,ty,k); d.heading=lerp(d.heading,vessel.heading,k);
+      d.speed=0;
+      if(d.state==='CHARGING'){
+        d.batt = clamp(d.batt + dt*3.5, 0, 100);
+        if(d.batt>=96){ d.state='STANDBY'; logEvent('OK', `${d.id} charged · standby on deck`); }
+      }
+      continue;
+    }
+
+    // battery drain when flying
+    if(d.state==='PATROL'||d.state==='TRACKING'||d.state==='RTB'){
+      d.batt = clamp(d.batt - dt*(d.state==='TRACKING'?0.55:0.42), 0, 100);
+      d.distanceFlown += d.speed*dt;
+    }
+    // auto RTB on low battery
+    if(d.batt<state.prefs.autoRtb && d.state!=='RTB' && d.state!=='CHARGING'){
+      setDroneState(d,'RTB'); d.wp={...BASE};
+      logEvent('ALERT', `${d.id} battery ${d.batt.toFixed(0)}% — auto RTB initiated`);
+    }
+
+    // choose / refresh waypoint
+    if(d.state==='STANDBY'){ d.targetSpeed=0; }
+
+    if(d.state==='PATROL'){
+      d.targetSpeed=d.maxSpeed*0.7;
+      if(dist(d,d.wp)<26){
+        // new random patrol point biased around its zone
+        d.wp={x:clamp(d.zone.x+rnd(-150,150),80,920), y:clamp(d.zone.y+rnd(-130,130),80,760)};
+      }
+      // SENSOR SWEEP: detect schools within range
+      for(const s of state.schools){
+        if(s.locked && s.trackedBy && s.trackedBy!==d.id) continue;
+        if(dist(d,s) < effRange(d)){
+          if(!s.detected){
+            s.detected=true; s.confidence=rnd(34,55);
+            logEvent('DETECT', `${d.id} visual contact ${s.id} · ${s.species.name} · ${s.count} fish · conf ${s.confidence.toFixed(0)}%`);
+          }
+          // build confidence + classify
+          s.confidence=clamp(s.confidence+dt*rnd(6,14),0,99);
+          if(!s.locked && s.confidence>state.prefs.classifyThreshold){
+            s.locked=true; s.trackedBy=d.id; d.track=s.id; d.detected++;
+            setDroneState(d,'TRACKING'); d.wp={x:s.x,y:s.y};
+            logEvent('OPS', `${d.id} CLASSIFY LOCK on ${s.id} · ${s.species.latin} · ${fmtMoney(s.value)}`);
+            if(s.prize){
+              logEvent('PRIZE', `★ PRIZE BLUEFIN in ${s.id} · est ${fmtMoney(s.prize.value)} · ${s.prize.kg.toFixed(0)}kg grade-A · ${d.id} tracking`);
+            }
+          }
+        }
+      }
+    }
+
+    if(d.state==='TRACKING'){
+      const s = state.schools.find(x=>x.id===d.track);
+      if(!s){ // school gone
+        d.track=null; setDroneState(d,'PATROL'); d.wp={...d.zone};
+      } else {
+        d.targetSpeed=d.maxSpeed;
+        d.wp={x:s.x,y:s.y};
+        s.confidence=clamp(s.confidence+dt*2,0,99.9);
+      }
+    }
+
+    if(d.state==='RTB'){
+      d.targetSpeed=d.maxSpeed;
+      d.wp={...BASE};
+      if(dist(d,BASE)<24){ setDroneState(d,'CHARGING'); d.x=BASE.x+rnd(-30,30); d.y=BASE.y+rnd(-6,6); }
+    }
+
+    // motion integration toward waypoint
+    d.speed = lerp(d.speed, d.targetSpeed, clamp(dt*1.5,0,1));
+    if(d.speed>0.02){
+      const desired = Math.atan2(d.wp.y-d.y, d.wp.x-d.x);
+      let dh = ((desired-d.heading+Math.PI*3)%TAU)-Math.PI;
+      d.heading += clamp(dh, -dt*2.2, dt*2.2);
+      const cd=currentAt(d.x,d.y), ec=envCur();   // drones hold heading but drift slightly
+      d.x += (Math.cos(d.heading)*d.speed + cd.x*0.06*ec)*dt*7;
+      d.y += (Math.sin(d.heading)*d.speed + cd.y*0.06*ec)*dt*7;
+      d.x=clamp(d.x,40,960); d.y=clamp(d.y,40,975);
+    }
+    // drift gps for flavor
+    d.gps[0]=34.05 + d.y/H*0.2; d.gps[1]=141.7 + d.x/W*0.25;
+  }
+
+  // cull stale schools that drifted long w/o lock
+  state.schools = state.schools.filter(s=>{
+    const age = state.simClock - s.born;
+    if(age>140 && !s.locked){
+      // school left the AO
+      return false;
+    }
+    return true;
+  });
+  // release locks whose drone left tracking
+  for(const s of state.schools){
+    if(s.locked && s.trackedBy){
+      const d=state.drones.find(x=>x.id===s.trackedBy);
+      if(!d || d.state!=='TRACKING') { /* keep lock; reacquire */ }
+    }
+  }
+}
+
+function setDroneState(d,st){ d.state=st; }
+
+/* ---------- fleet commands ---------- */
+function launchAll(){
+  let n=0;
+  for(const d of state.drones){
+    if(d.state==='STANDBY' && d.batt>20){ setDroneState(d,'PATROL'); d.wp={...d.zone}; n++; }
+  }
+  logEvent('OPS', `LAUNCH order · ${n} units to patrol stations`);
+  if(!state.running) toggleRun(true);
+}
+function recallAll(){
+  let n=0;
+  for(const d of state.drones){
+    if(d.state==='PATROL'||d.state==='TRACKING'){
+      setDroneState(d,'RTB'); d.track=null; n++;
+      // unlock its school
+      for(const s of state.schools) if(s.trackedBy===d.id){s.locked=false;s.trackedBy=null;}
+    }
+  }
+  logEvent('ALERT', `RECALL order · ${n} units returning to base`);
+}
+
+/* ============================================================================
+   RENDERING — TACTICAL MAP
+   ============================================================================ */
+const cv = document.getElementById('map');
+const ctx = cv.getContext('2d');
+let DPR=1, vw=0, vh=0, frameDt=0;
+function resizeMap(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  const r = cv.getBoundingClientRect();
+  vw=r.width; vh=r.height;
+  cv.width=Math.floor(vw*DPR); cv.height=Math.floor(vh*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resizeMap);
+
+// world -> screen
+const SX = x => x/W*vw;
+const SY = y => y/H*vh;
+const SS = v => v/W*vw; // scalar
+
+function drawMap(){
+  ctx.clearRect(0,0,vw,vh);
+  const layer=state.layer;
+
+  // background gradient by layer
+  let g;
+  if(layer==='thermal'){
+    g=ctx.createLinearGradient(0,0,0,vh);
+    g.addColorStop(0,'#0a0016'); g.addColorStop(1,'#1a0008');
+  } else if(layer==='sst'){
+    g=ctx.createLinearGradient(0,0,0,vh);
+    g.addColorStop(0,'#08101c'); g.addColorStop(1,'#0a0712');
+  } else {
+    g=ctx.createLinearGradient(0,0,0,vh);
+    g.addColorStop(0,'#04141f'); g.addColorStop(.5,'#031019'); g.addColorStop(1,'#020a10');
+  }
+  ctx.fillStyle=g; ctx.fillRect(0,0,vw,vh);
+
+  drawBathymetry(layer);
+  drawCurrent(layer);
+  drawGrid();
+  drawZones();
+
+  // schools
+  for(const s of state.schools) drawSchool(s);
+  // drones
+  for(const d of state.drones) drawDrone(d, layer);
+  // base
+  drawBase();
+
+  // selection ring on selected school
+}
+
+function drawGrid(){
+  ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(52,214,255,.06)';
+  ctx.beginPath();
+  for(let i=0;i<=10;i++){
+    const x=vw*i/10, y=vh*i/10;
+    ctx.moveTo(x,0);ctx.lineTo(x,vh);
+    ctx.moveTo(0,y);ctx.lineTo(vw,y);
+  }
+  ctx.stroke();
+  // crosshair center
+  ctx.strokeStyle='rgba(52,214,255,.12)';
+  ctx.beginPath();
+  ctx.moveTo(vw/2-10,vh/2);ctx.lineTo(vw/2+10,vh/2);
+  ctx.moveTo(vw/2,vh/2-10);ctx.lineTo(vw/2,vh/2+10);
+  ctx.stroke();
+  // coordinate ticks
+  ctx.fillStyle='rgba(111,133,147,.5)'; ctx.font='9px '+getMono();
+  for(let i=1;i<10;i++){ ctx.fillText((140+i*4).toFixed(0)+'°', vw*i/10+2, 11); }
+}
+
+/* depth-shaded seabed + isobath contours, cached to an offscreen canvas
+   (bathymetry is static, so we only re-render on layer/viewport change) */
+let bathyCanvas=null, bathyKey='';
+function renderBathyCache(layer){
+  const key=layer+'|'+Math.round(vw)+'x'+Math.round(vh)+'|'+DPR+'|'+(state.prefs.showContours?1:0);
+  if(bathyCanvas && bathyKey===key) return;
+  bathyKey=key;
+  const oc=bathyCanvas=document.createElement('canvas');
+  oc.width=Math.max(1,Math.floor(vw*DPR)); oc.height=Math.max(1,Math.floor(vh*DPR));
+  const g=oc.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
+  // relief shading — deeper water reads darker / bluer
+  const NX=44,NY=44,gx=vw/NX,gy=vh/NY;
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){
+    const wx=(i+0.5)/NX*W, wy=(j+0.5)/NY*H;
+    const t=clamp((depthAt(wx,wy)-100)/1100,0,1);
+    if(layer==='thermal')      g.fillStyle=`rgba(${40+t*40|0},0,${30-t*20|0},0.20)`;
+    else if(layer==='sst'){
+      // sea-surface-temperature field: warm (red) to cold (blue), with a front
+      const tF=clamp(0.5 + Math.sin(wx*0.006 + wy*0.004)*0.42 + (1-t)*0.18, 0, 1);
+      g.fillStyle=`rgba(${40+tF*200|0},${70+(1-Math.abs(tF-0.5)*2)*150|0},${220-tF*200|0},0.30)`;
+    }
+    else                       g.fillStyle=`rgba(${6+(1-t)*10|0},${30+(1-t)*55|0},${52+(1-t)*60|0},0.18)`;
+    g.fillRect(i*gx,j*gy,gx+1,gy+1);
+  }
+  // isobaths
+  if(state.contours && state.prefs.showContours){
+    g.lineJoin='round';
+    for(const c of state.contours){
+      const t=clamp((c.lv-100)/1100,0,1), major=c.lv%300===0;
+      const base = layer==='thermal' ? `rgba(255,${150-t*120|0},40,`
+                 : layer==='sst'     ? `rgba(220,235,255,`
+                 : `rgba(${70-t*40|0},${180-t*70|0},${220-t*60|0},`;
+      g.strokeStyle=base+(major?0.42:0.18)+')'; g.lineWidth=major?1.2:0.7;
+      g.beginPath();
+      for(const seg of c.segs){ g.moveTo(SX(seg[0].x),SY(seg[0].y)); g.lineTo(SX(seg[1].x),SY(seg[1].y)); }
+      g.stroke();
+    }
+    g.font='8px '+getMono();
+    for(const c of state.contours){
+      if(c.lv%300!==0||!c.segs.length) continue;
+      let best=null,bd=1e9;
+      for(const s of c.segs){ const mx=(s[0].x+s[1].x)/2, dd=Math.abs(mx-150); if(dd<bd){bd=dd;best=s;} }
+      if(best){ g.fillStyle=layer==='thermal'?'rgba(255,150,40,.6)':'rgba(95,185,225,.7)';
+        g.fillText(c.lv+'m', SX((best[0].x+best[1].x)/2)+3, SY((best[0].y+best[1].y)/2)-2); }
+    }
+  }
+}
+function drawBathymetry(layer){
+  renderBathyCache(layer);
+  if(bathyCanvas) ctx.drawImage(bathyCanvas,0,0,vw,vh);
+}
+
+let flowPhase=0;
+function drawCurrent(layer){
+  if(!state.flow || !state.prefs.showFlow) return;
+  flowPhase+=frameDt;
+  const col = layer==='thermal' ? '255,180,120' : layer==='sst' ? '200,220,235' : '120,200,235';
+  ctx.lineWidth=1; ctx.lineCap='round';
+  for(const p of state.flow){
+    p.life-=frameDt;
+    const c=currentAt(p.x,p.y);
+    const sp = 9*frameDt*(0.6+envCur()*0.4);
+    p.px=p.x; p.py=p.y;
+    p.x+=c.x*sp; p.y+=c.y*sp;
+    if(p.x<0||p.x>W||p.y<0||p.y>H||p.life<=0){ p.x=rnd(0,W); p.y=rnd(0,H); p.life=rnd(2,5); continue; }
+    ctx.strokeStyle=`rgba(${col},${0.10+0.05*Math.sin(flowPhase*2+p.y*0.05)})`;
+    ctx.beginPath(); ctx.moveTo(SX(p.px),SY(p.py)); ctx.lineTo(SX(p.x),SY(p.y)); ctx.stroke();
+  }
+}
+
+function drawZones(){
+  ctx.save();
+  ctx.setLineDash([4,5]); ctx.lineWidth=1; ctx.strokeStyle='rgba(58,90,106,.4)';
+  // 5x4 patrol grid boundaries
+  for(let c=0;c<5;c++)for(let r=0;r<4;r++){
+    const x=SX(lerp(40,840,c/5)+20), y=SY(lerp(60,560,r/4)+20);
+    const w=SS(800/5-10), h=SS(700/4-10);
+    ctx.strokeRect(x,y,w,h);
+  }
+  ctx.restore();
+}
+
+function drawBase(){
+  const v=vessel, x=SX(v.x), y=SY(v.y);
+  // wake trail
+  for(let i=1;i<v.wake.length;i++){
+    const a=i/v.wake.length;
+    ctx.strokeStyle=`rgba(25,230,164,${0.04+a*0.10})`; ctx.lineWidth=1+a*1.5;
+    ctx.beginPath(); ctx.moveTo(SX(v.wake[i-1].x),SY(v.wake[i-1].y)); ctx.lineTo(SX(v.wake[i].x),SY(v.wake[i].y)); ctx.stroke();
+  }
+  // recovery / dock radius
+  ctx.strokeStyle='rgba(25,230,164,.16)'; ctx.setLineDash([3,4]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(x,y,SS(60),0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  // hull (oriented to heading)
+  ctx.save(); ctx.translate(x,y); ctx.rotate(v.heading+Math.PI/2);
+  ctx.fillStyle='#0e3b30'; ctx.strokeStyle='rgba(25,230,164,.95)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(0,-13); ctx.lineTo(6,-3); ctx.lineTo(6,9); ctx.lineTo(-6,9); ctx.lineTo(-6,-3); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(25,230,164,.9)'; ctx.fillRect(-3,-2,6,6);        // superstructure
+  ctx.strokeStyle='rgba(25,230,164,.5)';                              // bow heading tick
+  ctx.beginPath(); ctx.moveTo(0,-13); ctx.lineTo(0,-21); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle='rgba(25,230,164,.9)'; ctx.font='bold 8px '+getMono(); ctx.textAlign='center';
+  ctx.fillText('◆ '+v.name, x, y+24); ctx.textAlign='left';
+}
+
+function drawSchool(s){
+  const x=SX(s.x), y=SY(s.y);
+  const detected = s.detected;
+  const prize = s.prize;
+  const col = prize ? '#ff7a1a' : '#ffcf3a';
+  const r = SS(s.size);
+
+  if(!detected){
+    // undetected: faint biomass smudge (visible but unidentified)
+    ctx.fillStyle='rgba(120,140,120,.10)';
+    ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+    return;
+  }
+  // pulsing acoustic return
+  const p = (Math.sin(s.pulse)*0.5+0.5);
+  ctx.fillStyle = prize ? `rgba(255,122,26,${0.10+0.10*p})` : `rgba(255,207,58,${0.08+0.08*p})`;
+  ctx.beginPath(); ctx.arc(x,y,r*(1.3+0.4*p),0,TAU); ctx.fill();
+
+  // fish cluster dots
+  ctx.fillStyle=col;
+  const n=Math.min(s.count,40);
+  for(let i=0;i<n;i++){
+    const a=(i/n)*TAU + s.pulse*0.1;
+    const rr=r*(0.3+ (i%5)/6);
+    ctx.fillRect(x+Math.cos(a)*rr-0.8, y+Math.sin(a)*rr-0.8, 1.6,1.6);
+  }
+  // core
+  ctx.beginPath(); ctx.arc(x,y,3,0,TAU); ctx.fill();
+
+  // lock bracket
+  if(s.locked){
+    ctx.strokeStyle=col; ctx.lineWidth=1.5;
+    const b=r+6;
+    ctx.beginPath();
+    // corner brackets
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy])=>{
+      ctx.moveTo(x+sx*b, y+sy*b - sy*5); ctx.lineTo(x+sx*b, y+sy*b); ctx.lineTo(x+sx*b - sx*5, y+sy*b);
+    });
+    ctx.stroke();
+  }
+  // selection ring
+  if(state.selSchool===s.id){
+    ctx.strokeStyle='#fff'; ctx.setLineDash([3,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(x,y,r+11,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // label
+  if(detected){
+    ctx.font='bold 9px '+getMono(); ctx.fillStyle=col;
+    let lbl = s.id+(s.locked?' ◉':'');
+    ctx.fillText(lbl, x+r+8, y-2);
+    ctx.fillStyle=prize?'#ff9a4a':'#d8c27a'; ctx.font='8px '+getMono();
+    ctx.fillText(fmtMoney(s.value), x+r+8, y+8);
+    if(prize){
+      ctx.fillStyle='#ff7a1a'; ctx.font='bold 8px '+getMono();
+      ctx.fillText('★ PRIZE', x+r+8, y+18);
+    }
+  }
+}
+
+function drawDrone(d, layer){
+  const x=SX(d.x), y=SY(d.y);
+  const offline = d.state==='OFFLINE';
+  const flying = d.state==='PATROL'||d.state==='TRACKING'||d.state==='RTB';
+  const sel = state.selDrone===d.id;
+  const col = offline?'#ff3b4e' : d.state==='TRACKING'?'#ffd23f' : d.state==='RTB'?'#ffb020' : d.state==='CHARGING'?'#19e6a4' : '#34d6ff';
+
+  // sensor range (only when flying)
+  if(flying && layer!=='thermal'){
+    ctx.fillStyle = sel?'rgba(25,230,164,.07)':'rgba(25,230,164,.035)';
+    ctx.strokeStyle = sel?'rgba(25,230,164,.4)':'rgba(25,230,164,.16)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(x,y,SS(effRange(d)),0,TAU); ctx.fill(); ctx.stroke();
+    // scanning arc
+    const sa = d.scanPhase%TAU;
+    ctx.strokeStyle='rgba(25,230,164,.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(x,y,SS(effRange(d)), sa, sa+0.5); ctx.stroke();
+  }
+  // tracking line
+  if(d.state==='TRACKING' && d.track){
+    const s=state.schools.find(z=>z.id===d.track);
+    if(s){ ctx.strokeStyle='rgba(255,210,63,.35)'; ctx.setLineDash([3,4]); ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(SX(s.x),SY(s.y)); ctx.stroke(); ctx.setLineDash([]); }
+  }
+
+  // selection halo
+  if(sel){
+    ctx.strokeStyle=col; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(x,y,12,0,TAU); ctx.stroke();
+  }
+
+  // body: triangle pointing in heading
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(d.heading+Math.PI/2);
+  ctx.fillStyle=col;
+  ctx.shadowColor=col; ctx.shadowBlur=sel?10:5;
+  ctx.beginPath();
+  ctx.moveTo(0,-7); ctx.lineTo(5,6); ctx.lineTo(0,3); ctx.lineTo(-5,6); ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
+
+  // id label
+  ctx.font='bold 8.5px '+getMono(); ctx.fillStyle=sel?'#fff':col;
+  ctx.fillText(d.id, x+9, y+3);
+}
+
+function getMono(){ return "'SF Mono','JetBrains Mono',monospace"; }
+
+/* ---------- map interaction ---------- */
+cv.addEventListener('click', e=>{
+  const r=cv.getBoundingClientRect();
+  const mx=(e.clientX-r.left), my=(e.clientY-r.top);
+  // hit-test drones first
+  let best=null,bd=18;
+  for(const d of state.drones){ const dd=Math.hypot(SX(d.x)-mx,SY(d.y)-my); if(dd<bd){bd=dd;best=d;} }
+  if(best){ selectDrone(best.id); return; }
+  let bs=null,bsd=20;
+  for(const s of state.schools){ if(!s.detected)continue; const dd=Math.hypot(SX(s.x)-mx,SY(s.y)-my); if(dd<bsd){bsd=dd;bs=s;} }
+  if(bs){ selectSchool(bs.id); }
+});
+
+/* ============================================================================
+   UI RENDER
+   ============================================================================ */
+const $ = id=>document.getElementById(id);
+
+function renderFleet(){
+  const el=$('fleet');
+  let ds=[...state.drones];
+  if(state.fleetSort==='batt') ds.sort((a,b)=>a.batt-b.batt);
+  else if(state.fleetSort==='state'){ const o={TRACKING:0,PATROL:1,RTB:2,CHARGING:3,STANDBY:4,OFFLINE:5}; ds.sort((a,b)=>o[a.state]-o[b.state]); }
+  else ds.sort((a,b)=>a.idx-b.idx);
+
+  el.innerHTML = ds.map(d=>{
+    const bc = d.batt>50?'#19e6a4':d.batt>20?'#ffb020':'#ff3b4e';
+    return `<div class="drone ${state.selDrone===d.id?'sel':''}" data-id="${d.id}">
+      <div class="dicon">${droneSvg(d.state)}</div>
+      <div class="dmeta">
+        <div class="id">${d.id} ${d.track?`<span class="chip lock">▶${d.track}</span>`:''}</div>
+        <div class="role">${d.model} · ${d.sensor}</div>
+      </div>
+      <div class="dright">
+        <span class="statetag bg-${d.state}">${d.state}</span>
+        <div class="batt"><span style="color:${bc}">${d.batt.toFixed(0)}%</span>
+          <span class="battbar"><i style="width:${d.batt}%;background:${bc}"></i></span></div>
+      </div>
+    </div>`;
+  }).join('');
+  // count of active
+  const active=state.drones.filter(d=>d.state!=='STANDBY'&&d.state!=='OFFLINE'&&d.state!=='CHARGING').length;
+  $('s-active').textContent = active+'/'+state.drones.length;
+  $('fleet-count').textContent = state.drones.length+' UNITS';
+}
+function droneSvg(st){
+  const c = st==='OFFLINE'?'#ff3b4e':st==='TRACKING'?'#ffd23f':st==='CHARGING'?'#19e6a4':st==='RTB'?'#ffb020':'#34d6ff';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.6">
+    <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/>
+    <rect x="9" y="9" width="6" height="6" rx="1" fill="${c}" fill-opacity=".25"/>
+    <line x1="8" y1="8" x2="6" y2="6"/><line x1="16" y1="8" x2="18" y2="6"/><line x1="8" y1="16" x2="6" y2="18"/><line x1="16" y1="16" x2="18" y2="18"/>
+  </svg>`;
+}
+
+$('fleet').addEventListener('click', e=>{
+  const row=e.target.closest('.drone'); if(row) selectDrone(row.dataset.id);
+});
+
+function selectDrone(id){ state.selDrone=id; state.selSchool=null; renderFleet(); renderDetail(); }
+function selectSchool(id){ state.selSchool=id; const s=state.schools.find(x=>x.id===id); if(s&&s.trackedBy){state.selDrone=s.trackedBy;} renderFleet(); renderDetail(); }
+
+function renderDetail(){
+  const el=$('detail'); const d=state.drones.find(x=>x.id===state.selDrone);
+  $('dt-id').textContent = d?d.id:'—';
+  if(!d){ el.innerHTML=`<div class="detail-empty">◎ NO UNIT SELECTED<br><br>Select a drone from the fleet roster or tap a marker on the tactical map to view live telemetry, sensor feed, and command options.</div>`; return; }
+  const s = d.track? state.schools.find(z=>z.id===d.track):null;
+  const bc = d.batt>50?'#19e6a4':d.batt>20?'#ffb020':'#ff3b4e';
+  const spd=(d.speed*4.1).toFixed(1);
+  const live = d.feedType && d.feedType!=='sim';
+  const feedInner =
+    d.feedType==='video'  ? `<video id="feedvid" src="${d.feedUrl}" autoplay muted loop playsinline crossorigin="anonymous"></video>`
+  : d.feedType==='img'    ? `<img id="feedimg" src="${d.feedUrl}" alt="feed">`
+  : d.feedType==='webcam' ? `<video id="feedvid" autoplay muted playsinline></video>`
+  :                         `<canvas id="feedcv"></canvas>`;
+  el.innerHTML=`
+    <div class="feed">
+      ${feedInner}
+      <div class="feed-ov">
+        <div class="rec"><b></b>${live?'LIVE':'SIM'} · ${d.id}</div>
+        <div class="fr">${live?(d.feedType==='webcam'?'WEBCAM':'STREAM'):d.sensor.split(' ')[0].toUpperCase()}</div>
+        <div class="bl">ALT ${d.alt}m AGL · ${(d.speed*4.1).toFixed(0)} kn<br>${d.model}</div>
+        <div class="br">${d.gps[0].toFixed(4)}°N<br>${d.gps[1].toFixed(4)}°E</div>
+      </div>
+      <button class="btn sm feed-link" id="feed-src">📡 SOURCE</button>
+    </div>
+    <div class="feed-cfg" id="feed-cfg" hidden>
+      <input id="feed-url" value="${d.feedUrl&&d.feedType!=='webcam'?d.feedUrl:''}" placeholder="HLS .m3u8 · .mp4/.webm · MJPEG URL  (RTSP → use a go2rtc/MediaMTX gateway)">
+      <div class="feed-cfg-row">
+        <button class="btn sm primary" id="feed-connect">CONNECT</button>
+        <button class="btn sm" id="feed-webcam">USE WEBCAM</button>
+        <button class="btn sm danger" id="feed-clear">SIM FEED</button>
+      </div>
+    </div>
+    <div class="dt-head">
+      <div class="dicon" style="width:34px;height:34px">${droneSvg(d.state)}</div>
+      <div style="flex:1">
+        <div class="big">${d.id}</div>
+        <div class="mdl">${d.model} · ${d.sensor}</div>
+      </div>
+      <span class="statetag bg-${d.state}" style="font-size:11px;padding:3px 8px">${d.state}</span>
+    </div>
+    <div class="kv">
+      <div><div class="k">Speed (kn)</div><div class="v">${spd}</div></div>
+      <div><div class="k">Heading</div><div class="v">${((d.heading*180/Math.PI+450)%360).toFixed(0)}°</div></div>
+      <div><div class="k">Battery</div><div class="v" style="color:${bc}">${d.batt.toFixed(0)}%</div></div>
+      <div><div class="k">Signal</div><div class="v" style="color:${d.signal>80?'#19e6a4':'#ffb020'}">${d.signal.toFixed(0)}%</div></div>
+      <div><div class="k">Altitude AGL</div><div class="v">${d.alt} m</div></div>
+      <div><div class="k">Camera Swath</div><div class="v">${(effRange(d)*2.4/120).toFixed(1)} km</div></div>
+      <div><div class="k">Contacts Found</div><div class="v gold">${d.detected}</div></div>
+      <div><div class="k">Dist. Flown</div><div class="v">${(d.distanceFlown*0.4).toFixed(1)} km</div></div>
+    </div>
+    ${s?`<div class="gauge"><div class="lbl"><span>ACTIVE TARGET · ${s.id}</span><span style="color:${s.prize?'#ff7a1a':'#ffd23f'}">${fmtMoney(s.value)}</span></div>
+      <div class="lbl" style="margin-top:6px"><span>CLASSIFY CONFIDENCE</span><span>${s.confidence.toFixed(0)}%</span></div>
+      <div class="gbar"><i style="width:${s.confidence}%;background:linear-gradient(90deg,#ffb020,#19e6a4)"></i></div>
+      <div style="font-size:9.5px;color:var(--dim);margin-top:6px">${s.species.name} · ${s.species.latin} · ${s.count} fish · ~${s.avgKg.toFixed(0)}kg avg · depth ${s.depth}m</div>
+      ${s.prize?`<div style="font-size:9.5px;color:var(--prize);margin-top:3px;font-weight:700">★ PRIZE SPECIMEN · ${s.prize.kg.toFixed(0)}kg grade-A · ${fmtMoney(s.prize.value)}</div>`:''}
+      </div>`:''}
+    <div class="dt-actions">
+      ${d.state==='STANDBY'||d.state==='CHARGING'?`<button class="btn primary sm" data-cmd="launch">▶ LAUNCH</button>`:''}
+      ${d.state==='PATROL'||d.state==='TRACKING'?`<button class="btn warn sm" data-cmd="rtb">↩ RTB</button>`:''}
+      ${d.state!=='OFFLINE'?`<button class="btn sm" data-cmd="orbit">◎ ORBIT</button>`:''}
+      ${d.state!=='OFFLINE'?`<button class="btn danger sm" data-cmd="offline">⏻ OFFLINE</button>`:`<button class="btn primary sm" data-cmd="online">⏻ RESTORE</button>`}
+      <button class="btn sm" data-cmd="center">⊕ CENTER MAP</button>
+    </div>
+  `;
+  // bind cmds
+  el.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>droneCmd(d,b.dataset.cmd));
+  bindFeed(d);
+  resizeFeed();
+}
+
+/* ---------- real camera feed linking (stream URL / MJPEG / webcam) ---------- */
+function feedKind(u){
+  u=u.toLowerCase();
+  if(/\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(u) || u.includes('.m3u8')) return 'video';
+  if(/mjpe?g|\.jpe?g|snapshot|video\.cgi|axis-cgi/.test(u)) return 'img';
+  return 'video';
+}
+function bindFeed(d){
+  const cfg=$('feed-cfg'), srcBtn=$('feed-src');
+  if(srcBtn) srcBtn.onclick=()=>{ if(cfg) cfg.hidden=!cfg.hidden; };
+  const con=$('feed-connect'); if(con) con.onclick=()=>{
+    const u=($('feed-url').value||'').trim(); if(!u) return;
+    d.feedUrl=u; d.feedType=feedKind(u);
+    logEvent('OPS', `${d.id} camera feed linked · ${d.feedType==='img'?'MJPEG':'STREAM'} · ${u.slice(0,42)}`);
+    renderDetail();
+  };
+  const cam=$('feed-webcam'); if(cam) cam.onclick=async()=>{
+    try{
+      if(!state.camStream) state.camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      d.feedType='webcam'; d.feedUrl='webcam';
+      logEvent('OPS', `${d.id} live webcam attached as camera feed`);
+      renderDetail();
+    }catch(err){ logEvent('ALERT', `Webcam access denied for ${d.id}`); }
+  };
+  const clr=$('feed-clear'); if(clr) clr.onclick=()=>{ d.feedType='sim'; d.feedUrl=''; renderDetail(); };
+
+  // attach live sources post-render
+  if(d.feedType==='webcam'){ const v=$('feedvid'); if(v && state.camStream) v.srcObject=state.camStream; }
+  if(d.feedType==='video' && d.feedUrl.toLowerCase().includes('.m3u8')){
+    const v=$('feedvid');
+    if(v && v.canPlayType('application/vnd.apple.mpegurl')===''){ loadHls(v, d.feedUrl); } // non-Safari HLS
+  }
+}
+// lazily pull in hls.js only if an HLS stream is linked on a non-native browser
+let hlsLib=null;
+function loadHls(video, url){
+  const start=()=>{ try{ const h=new window.Hls(); h.loadSource(url); h.attachMedia(video); }catch(e){} };
+  if(window.Hls){ start(); return; }
+  if(hlsLib){ hlsLib.then(start); return; }
+  hlsLib=new Promise(res=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';
+    sc.onload=()=>res(); sc.onerror=()=>res();
+    document.head.appendChild(sc);
+  });
+  hlsLib.then(start);
+}
+
+function droneCmd(d,cmd){
+  if(cmd==='launch'){ setDroneState(d,'PATROL'); d.wp={...d.zone}; if(d.batt<5)d.batt=80; logEvent('OPS',`${d.id} launched to patrol`); if(!state.running)toggleRun(true);}
+  if(cmd==='rtb'){ setDroneState(d,'RTB'); d.track=null; for(const s of state.schools)if(s.trackedBy===d.id){s.locked=false;s.trackedBy=null;} logEvent('OPS',`${d.id} manual RTB`);}
+  if(cmd==='orbit'){ d.wp={x:d.x+rnd(-40,40),y:d.y+rnd(-40,40)}; logEvent('OPS',`${d.id} holding orbit`);}
+  if(cmd==='offline'){ setDroneState(d,'OFFLINE'); d.speed=0; d.track=null; logEvent('ALERT',`${d.id} taken OFFLINE by operator`);}
+  if(cmd==='online'){ setDroneState(d,'STANDBY'); logEvent('OK',`${d.id} restored to standby`);}
+  if(cmd==='center'){ /* map auto-centers visually; flash */ }
+  renderFleet(); renderDetail();
+}
+
+/* ---------- simulated sensor feed ---------- */
+let feedT=0;
+function resizeFeed(){ const c=$('feedcv'); if(!c)return; const r=c.getBoundingClientRect(); c.width=r.width*DPR; c.height=r.height*DPR; }
+/* Simulated AERIAL camera feed — a top-down view of the ocean surface as a
+   spotter drone sees it: ripples, sun glint, surface "puddles" of tuna and the
+   working birds that mark them. Only runs when the drone is on the SIM feed;
+   real video/MJPEG/webcam sources replace this element entirely. */
+function drawFeed(){
+  const c=$('feedcv'); if(!c)return; const x2=c.getContext('2d');
+  const w=c.width,h=c.height; if(!w)return;
+  const d=state.drones.find(z=>z.id===state.selDrone); if(!d||d.feedType!=='sim')return;
+  feedT+=0.03;
+  const thermal = state.layer==='thermal';   // operator-selected IR/thermal view
+  // ocean surface seen from above
+  let g=x2.createLinearGradient(0,0,w,h);
+  if(thermal){ g.addColorStop(0,'#0a0020'); g.addColorStop(1,'#240010'); }
+  else { g.addColorStop(0,'#063246'); g.addColorStop(1,'#021a2a'); }
+  x2.fillStyle=g; x2.fillRect(0,0,w,h);
+  // surface swell lines drifting
+  x2.strokeStyle = thermal?'rgba(255,120,40,.05)':'rgba(120,190,220,.06)'; x2.lineWidth=1*DPR;
+  for(let i=0;i<9;i++){ x2.beginPath(); const yy=((feedT*12+i*42)%(h+50))-25;
+    for(let xx=0;xx<=w;xx+=14*DPR) x2.lineTo(xx, yy+Math.sin(xx*0.02+feedT+i)*4*DPR); x2.stroke(); }
+  // sun glint
+  if(!thermal){ const gx=w*0.5+Math.sin(feedT*0.3)*w*0.2; const rg=x2.createRadialGradient(gx,h*0.3,0,gx,h*0.3,w*0.32);
+    rg.addColorStop(0,'rgba(185,222,240,.12)'); rg.addColorStop(1,'transparent'); x2.fillStyle=rg; x2.fillRect(0,0,w,h); }
+
+  const s=d.track?state.schools.find(z=>z.id===d.track):null;
+  if(s){
+    const cx=w*0.5+Math.sin(feedT*0.4)*w*0.07, cy=h*0.52+Math.cos(feedT*0.3)*h*0.05;
+    const pr=Math.min(w,h)*0.32;
+    // surface boil / "puddle" where the school pushes bait up
+    const rg=x2.createRadialGradient(cx,cy,0,cx,cy,pr);
+    if(thermal){ rg.addColorStop(0,'rgba(255,180,40,.55)'); rg.addColorStop(.6,'rgba(255,90,0,.25)'); rg.addColorStop(1,'transparent'); }
+    else { rg.addColorStop(0,'rgba(10,34,44,.6)'); rg.addColorStop(.7,'rgba(12,44,58,.3)'); rg.addColorStop(1,'transparent'); }
+    x2.fillStyle=rg; x2.beginPath(); x2.arc(cx,cy,pr,0,TAU); x2.fill();
+    // individual fish, top-down torpedoes
+    const n=Math.min(s.count,32);
+    for(let i=0;i<n;i++){
+      const a=i*2.4+feedT*0.5, rr=pr*(0.12+(i%6)/7);
+      const fx=cx+Math.cos(a)*rr, fy=cy+Math.sin(a)*rr, fl=(s.species.bluefin?13:8)*DPR;
+      x2.save(); x2.translate(fx,fy); x2.rotate(a+Math.sin(feedT+i)*0.2);
+      x2.fillStyle= thermal?'rgba(255,210,80,.9)' : (s.prize&&i===0?'rgba(255,122,26,.95)':'rgba(8,20,28,.85)');
+      x2.beginPath(); x2.ellipse(0,0,fl,fl*0.32,0,0,TAU); x2.fill(); x2.restore();
+    }
+    // AI bounding box + label
+    x2.strokeStyle=s.prize?'#ff7a1a':'#19e6a4'; x2.lineWidth=1.5*DPR;
+    const bw=pr*1.7, bh=pr*1.5;
+    x2.strokeRect(cx-bw/2,cy-bh/2,bw,bh);
+    x2.fillStyle=x2.strokeStyle; x2.font=`bold ${9*DPR}px monospace`;
+    x2.fillText(`${s.prize?'★ PRIZE · ':''}${s.species.name} ${s.confidence.toFixed(0)}%`, cx-bw/2, cy-bh/2-5*DPR);
+    // working birds wheeling over the school — the classic surface tell
+    if(!thermal){ x2.strokeStyle='rgba(232,242,247,.6)'; x2.lineWidth=1*DPR;
+      for(let b=0;b<7;b++){ const ba=feedT*1.2+b; const bx=cx+Math.cos(ba)*pr*1.15, by=cy+Math.sin(ba)*pr*0.7-9*DPR;
+        x2.beginPath(); x2.moveTo(bx-4*DPR,by); x2.lineTo(bx,by-3*DPR); x2.lineTo(bx+4*DPR,by); x2.stroke(); } }
+  } else {
+    x2.fillStyle='rgba(150,180,195,.45)'; x2.font=`${11*DPR}px monospace`; x2.textAlign='center';
+    x2.fillText('— OPEN WATER · SCANNING SURFACE —', w/2, h/2); x2.textAlign='left';
+  }
+  // gimbal reticle
+  x2.strokeStyle='rgba(25,230,164,.3)'; x2.lineWidth=1*DPR;
+  x2.beginPath(); x2.moveTo(w/2-14*DPR,h/2);x2.lineTo(w/2+14*DPR,h/2);x2.moveTo(w/2,h/2-14*DPR);x2.lineTo(w/2,h/2+14*DPR); x2.stroke();
+}
+
+function renderLog(){
+  const el=$('log');
+  $('log-count').textContent=state.log.length;
+  el.innerHTML=state.log.slice(0,80).map(l=>`<div class="logrow"><span class="t">${l.t}</span><span class="tag ${l.tag}">${l.tag}</span><span class="msg">${l.msg}</span></div>`).join('');
+}
+
+function renderTargets(){
+  const el=$('targets');
+  const det=state.schools.filter(s=>s.detected).sort((a,b)=>b.value-a.value);
+  $('tgt-count').textContent=det.length+' CONTACT'+(det.length===1?'':'S');
+  if(!det.length){ el.innerHTML=`<div class="empty">No biological contacts. Run the simulation to begin acoustic survey.</div>`; return; }
+  el.innerHTML=det.map(s=>`
+    <div class="tgt ${s.prize?'prize':''}" data-id="${s.id}">
+      <div class="tgt-top">
+        <span class="nm">${s.id}</span>
+        ${s.locked?'<span class="chip lock">LOCK</span>':'<span class="chip">SCAN</span>'}
+        ${s.prize?'<span class="chip prize">★ PRIZE</span>':''}
+        <span class="val ${s.prize?'prize':''}">${fmtMoney(s.value)}</span>
+      </div>
+      <div class="tgt-sub">
+        <span>${s.species.name}</span>
+        <span>${s.count} fish</span>
+        <span>~${s.avgKg.toFixed(0)}kg</span>
+        <span>${s.depth}m</span>
+        ${s.trackedBy?`<span style="color:var(--cyan)">▶ ${s.trackedBy}</span>`:''}
+      </div>
+      <div class="conf"><i style="width:${s.confidence}%"></i></div>
+    </div>`).join('');
+  el.querySelectorAll('.tgt').forEach(t=>t.onclick=()=>selectSchool(t.dataset.id));
+}
+
+function renderTop(){
+  const det=state.schools.filter(s=>s.detected);
+  $('s-schools').textContent=state.schools.filter(s=>s.locked).length;
+  $('s-prize').textContent=state.schools.filter(s=>s.prize&&s.detected).length;
+  const tot=det.reduce((a,s)=>a+s.value,0);
+  $('s-value').textContent=fmtMoney(tot);
+  $('s-sea').textContent='SS '+state.env.seaState;
+  // hud — environment, current set, and live vessel readout
+  const cv=currentAt(vessel.x,vessel.y);
+  const setBrg=((Math.atan2(cv.x,-cv.y)*180/Math.PI)+360)%360;   // direction current flows TOWARD
+  $('hud-sst').textContent=state.env.sst.toFixed(1)+'°C';
+  $('hud-cur').textContent=state.env.current.toFixed(1)+' kn '+compass(setBrg);
+  state.env.biomass = det.reduce((a,s)=>a+s.count*s.avgKg,0)/1000;
+  $('hud-bio').textContent=state.env.biomass.toFixed(1)+' t';
+  const sr=$('hud-srange'); if(sr) sr.textContent=(2.4*state.prefs.rangeScale).toFixed(1)+' km';
+  // lat/lon track the mothership across the AO
+  $('hud-lat').textContent=(34.0 + (1-vessel.y/H)*0.42).toFixed(3)+'°N';
+  $('hud-lon').textContent=(141.7 + vessel.x/W*0.5).toFixed(3)+'°E';
+  const vBrg=((vessel.heading*180/Math.PI+450)%360);
+  const vspd=(vessel.speed*4.1*(1+state.env.current*0.1)).toFixed(1);
+  const ve=$('hud-vessel'); if(ve) ve.textContent=`${vessel.name} · ${vspd} kn · ${vBrg.toFixed(0)}° ${compass(vBrg)}`;
+}
+
+function renderClock(){
+  const c=state.simClock;
+  const hh=pad(Math.floor(c/3600)%24), mm=pad(Math.floor(c/60)%60), ss=pad(Math.floor(c)%60);
+  $('clk-time').textContent=`${hh}:${mm}:${ss}Z`;
+}
+
+/* ============================================================================
+   MAIN LOOP
+   ============================================================================ */
+let lastTs=0, acc=0;
+function loop(ts){
+  const real=(ts-lastTs)/1000; lastTs=ts;
+  frameDt=clamp(real,0,0.05);           // real-time delta for ocean flow animation
+  if(state.running){
+    const dt=clamp(real,0,0.1)*state.speed;
+    step(dt);
+  }
+  drawMap();
+  drawFeed();
+  renderClock();
+  // throttle heavy DOM renders to ~6fps
+  acc+=real;
+  if(acc>0.16){ acc=0; renderFleet(); renderTargets(); renderTop();
+    if(state.selDrone) renderDetailLight(); }
+  requestAnimationFrame(loop);
+}
+// light detail refresh (just numbers) to avoid rebuilding feed canvas every tick
+function renderDetailLight(){
+  // re-render full detail occasionally is fine; the feed canvas persists because
+  // we only rebuild innerHTML in renderDetail(). Here we update the kv values cheaply.
+  const d=state.drones.find(x=>x.id===state.selDrone); if(!d)return;
+  // Simplest robust approach: only do a full rebuild when selection changed.
+  // For live values we patch a few fields:
+  const det=$('detail'); if(!det)return;
+  const vs=det.querySelectorAll('.kv .v');
+  if(vs.length>=8){
+    const bc = d.batt>50?'#19e6a4':d.batt>20?'#ffb020':'#ff3b4e';
+    vs[0].textContent=(d.speed*4.1).toFixed(1);
+    vs[1].textContent=((d.heading*180/Math.PI+450)%360).toFixed(0)+'°';
+    vs[2].textContent=d.batt.toFixed(0)+'%'; vs[2].style.color=bc;
+    vs[3].textContent=d.signal.toFixed(0)+'%';
+    vs[4].textContent=d.alt+' m';
+    vs[6].textContent=d.detected;
+    vs[7].textContent=(d.distanceFlown*0.4).toFixed(1)+' km';
+  }
+  // confidence gauge
+  const s=d.track?state.schools.find(z=>z.id===d.track):null;
+  const gb=det.querySelector('.gbar i');
+  if(s&&gb) gb.style.width=s.confidence+'%';
+  // if track changed, full rebuild
+  if((s?s.id:null)!==(det._lastTrack||null)){ det._lastTrack=s?s.id:null; renderDetail(); }
+}
+
+/* ============================================================================
+   CONTROLS
+   ============================================================================ */
+function toggleRun(force){
+  state.running = force!==undefined?force:!state.running;
+  const b=$('btn-play');
+  b.innerHTML = state.running?'❚❚ PAUSE':'▶ RUN SIM';
+  b.classList.toggle('on', state.running);
+  $('s-mode').textContent = state.running?'SIM·LIVE':'SIM·HOLD';
+  if(state.running) logEvent('SYS','Simulation resumed · clock running');
+  else logEvent('SYS','Simulation paused');
+}
+$('btn-play').onclick=()=>toggleRun();
+$('btn-launch').onclick=launchAll;
+$('btn-rtb').onclick=recallAll;
+$('speeds').querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{
+  state.speed=+b.dataset.sp;
+  $('speeds').querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',x===b));
+});
+document.querySelectorAll('.fleet-tools [data-sort]').forEach(b=>b.onclick=()=>{ state.fleetSort=b.dataset.sort; renderFleet(); });
+document.querySelectorAll('.maptab').forEach(t=>t.onclick=()=>{
+  state.layer=t.dataset.layer; document.querySelectorAll('.maptab').forEach(x=>x.classList.toggle('on',x===t));
+  $('hud-scan').textContent = state.layer==='sst'?'SEA-SURFACE TEMP':state.layer==='thermal'?'FLIR THERMAL 640':'EO/IR · AI-VISION';
+});
+// ---- operator preferences modal ----
+const PREF_SCHEMA=[
+  {key:'fleetSize',         min:1,   max:20,  step:1,   commit:true, nm:'NUMBER OF DRONES', desc:'Active units in the fleet',      fmt:v=>String(v)},
+  {key:'rangeScale',        min:0.5, max:2.5, step:0.1, nm:'CAMERA RANGE',      desc:'Detection swath · all units',         fmt:v=>(2.4*v).toFixed(1)+' km'},
+  {key:'classifyThreshold', min:50,  max:98,  step:1,   nm:'CLASSIFY THRESHOLD',desc:'Confidence % to lock a contact',      fmt:v=>v+'%'},
+  {key:'autoRtb',           min:5,   max:40,  step:1,   nm:'AUTO-RTB BATTERY',  desc:'Battery % that recalls a drone',      fmt:v=>v+'%'},
+  {key:'currentMul',        min:0,   max:2.5, step:0.1, nm:'CURRENT STRENGTH',  desc:'Ocean current drift multiplier',      fmt:v=>v.toFixed(1)+'×'},
+  {key:'maxSchools',        min:4,   max:24,  step:1,   nm:'MAX SCHOOLS',       desc:'Concurrent schools in the AO',        fmt:v=>String(v)},
+  {key:'prizeMin',          min:1.5, max:5,   step:0.1, nm:'PRIZE VALUE FLOOR', desc:'Min $ to flag a trophy bluefin',      fmt:v=>'$'+v.toFixed(1)+'M'},
+  {key:'bluefinOnly', toggle:true, nm:'BLUEFIN PRIORITY', desc:'Survey bluefin species only'},
+  {key:'showContours',toggle:true, nm:'DEPTH CONTOURS',   desc:'Render bathymetric isobaths'},
+  {key:'showFlow',    toggle:true, nm:'CURRENT FLOW',     desc:'Animate surface current particles'},
+];
+function buildPrefs(){
+  const P=state.prefs;
+  $('prefs-body').innerHTML=PREF_SCHEMA.map(s=> s.toggle
+    ? `<div class="pref"><div class="toggle ${P[s.key]?'on':''}" data-k="${s.key}">
+         <span class="sw"><i></i></span>
+         <span><div class="nm">${s.nm}</div><div class="desc">${s.desc}</div></span></div></div>`
+    : `<div class="pref"><div class="top"><span class="nm">${s.nm}</span><span class="desc">${s.desc}</span>
+         <span class="val" id="pv-${s.key}">${s.fmt(P[s.key])}</span></div>
+         <input type="range" data-k="${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" value="${P[s.key]}"></div>`
+  ).join('');
+  $('prefs-body').querySelectorAll('input[type=range]').forEach(inp=>{
+    const k=inp.dataset.k, sc=PREF_SCHEMA.find(x=>x.key===k);
+    inp.oninput=()=>{
+      state.prefs[k] = sc.step<1 ? parseFloat(inp.value) : parseInt(inp.value,10);
+      $('pv-'+k).textContent=sc.fmt(state.prefs[k]); savePrefs();
+      if(!sc.commit) afterPrefChange(k);     // heavy changes apply on release
+    };
+    if(sc.commit) inp.onchange=()=>afterPrefChange(k);
+  });
+  $('prefs-body').querySelectorAll('.toggle').forEach(t=>t.onclick=()=>{
+    const k=t.dataset.k; state.prefs[k]=!state.prefs[k];
+    t.classList.toggle('on',state.prefs[k]); savePrefs(); afterPrefChange(k);
+  });
+}
+function afterPrefChange(k){
+  if(k==='showContours') bathyKey='';                 // force bathymetry cache rebuild
+  if(k==='fleetSize') rebuildFleet();
+  if(k==='rangeScale' && state.selDrone) renderDetail();
+}
+$('btn-prefs').onclick=()=>{ buildPrefs(); $('prefs-modal').hidden=false; };
+$('prefs-close').onclick=()=>{ $('prefs-modal').hidden=true; };
+$('prefs-modal').onclick=e=>{ if(e.target.id==='prefs-modal') $('prefs-modal').hidden=true; };
+$('prefs-reset').onclick=()=>{ Object.assign(state.prefs, DEFAULT_PREFS); savePrefs(); bathyKey=''; buildPrefs(); if(state.selDrone) renderDetail(); };
+
+// keyboard
+window.addEventListener('keydown',e=>{
+  if(!$('prefs-modal').hidden){ if(e.key==='Escape') $('prefs-modal').hidden=true; return; }
+  if(e.code==='Space'){ e.preventDefault(); toggleRun(); }
+  if(e.key==='l'||e.key==='L') launchAll();
+  if(e.key==='r'||e.key==='R') recallAll();
+});
+
+/* ============================================================================
+   SIM_API — integration contract for real hardware
+   ----------------------------------------------------------------------------
+   To go live, replace step() with a feed handler that maps real telemetry onto
+   the same drone/school shapes the renderer expects:
+     window.OSS.ingestTelemetry({id, x,y, heading, batt, signal, state, ...})
+     window.OSS.ingestContact({id, species, x,y, depth, count, value, prize})
+   Coordinates are normalized world units [0..1000]; convert GPS lat/lon via a
+   linear map over the AO bounding box. The renderer + UI are transport-agnostic.
+   ============================================================================ */
+window.OSS = {
+  state,
+  ingestTelemetry(t){ const d=state.drones.find(x=>x.id===t.id); if(d)Object.assign(d,t); },
+  ingestContact(c){ /* upsert a detected school from real CV / AI vision */
+    let s=state.schools.find(x=>x.id===c.id);
+    if(!s){ s={id:c.id, pulse:0, born:state.simClock, size:14, ...c}; state.schools.push(s); }
+    else Object.assign(s,c);
+    s.detected=true;
+  },
+  setMode(m){ /* 'SIM' | 'LIVE' */ $('s-mode').textContent=m; },
+};
+
+/* ============================================================================
+   BOOT SEQUENCE
+   ============================================================================ */
+const BOOT_LINES=[
+  'OSS MAINFRAME · OCEAN SURVEILLANCE SERVICES',
+  'KERNEL v1.0.0 · TACTICAL FLEET COMMAND',
+  '',
+  '[ OK ] initializing aerial survey core',
+  '[ OK ] linking EO/IR camera gimbals · 8K + thermal',
+  '[ OK ] loading bluefin vision model · CNN-TUNA-7',
+  '[ OK ] calibrating FLIR thermal channels',
+  '[ OK ] establishing C2 datalink · drone bays online',
+  '[ OK ] geofencing AO · PACIFIC SECTOR 7-NORTH',
+  '[ OK ] prize-grade specimen valuation online ($2.8–3.2M)',
+  '',
+  '>>> FLEET STANDING BY · AWAITING LAUNCH ORDER',
+];
+function boot(){
+  const bl=$('bootlog'); let i=0;
+  const tick=()=>{
+    if(i<BOOT_LINES.length){
+      const div=document.createElement('div'); div.className='l';
+      div.textContent=BOOT_LINES[i]||' ';
+      div.style.color = BOOT_LINES[i].startsWith('>>>')?'#ffd23f':BOOT_LINES[i].startsWith('[ OK ]')?'#19e6a4':'#6f8593';
+      bl.appendChild(div); i++;
+      setTimeout(tick, BOOT_LINES[i-1]===''?60:rnd(70,150));
+    } else {
+      setTimeout(()=>{ $('boot').style.transition='opacity .5s'; $('boot').style.opacity='0';
+        setTimeout(()=>{ $('boot').remove(); $('app').setAttribute('aria-hidden','false'); }, 500); }, 500);
+    }
+  };
+  tick();
+}
+
+/* ---------- INIT ---------- */
+function init(){
+  buildBathymetry();
+  initFlow();
+  initFleet();
+  resizeMap();
+  // seed a couple of schools + initial log
+  state.simClock = 6*3600 + 12*60; // 06:12Z start
+  logEvent('SYS','OSS Mainframe online · fleet standing by');
+  logEvent('SYS',`${state.prefs.fleetSize} drones on deck · AO Pacific Sector 7-North`);
+  spawnSchool(); spawnSchool();
+  renderFleet(); renderTargets(); renderTop(); renderLog(); renderDetail();
+  requestAnimationFrame(loop);
+  boot();
+}
+window.addEventListener('load', ()=>{ resizeMap(); });
+init();
+</script>
+</body>
+</html>

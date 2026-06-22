@@ -1,0 +1,15 @@
+{
+  "name": "OSS Console — Ocean Surveillance",
+  "short_name": "OSS Console",
+  "description": "Aerial fish-spotting drone console — live feed, AI vision, mission planning, hotspot logbook.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eaf0f5",
+  "theme_color": "#0e7490",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

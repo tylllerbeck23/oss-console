@@ -1,0 +1,4 @@
+ultralytics==8.3.*
+opencv-python==4.*
+requests==2.*
+# torch is pulled in by ultralytics; on a Jetson install the NVIDIA build instead

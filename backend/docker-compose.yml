@@ -1,0 +1,40 @@
+# OSS Data Hub — one command to stand up the database, API, and stream gateway.
+#   export OSS_API_KEY=$(openssl rand -hex 16)
+#   docker compose up --build
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: oss
+      POSTGRES_PASSWORD: oss
+      POSTGRES_DB: oss
+    ports: ["5432:5432"]
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oss"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql://oss:oss@db:5432/oss
+      OSS_API_KEY: ${OSS_API_KEY:-change-me}
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # RTMP in (from DJI Pilot 2) -> HLS/WebRTC out (to the console feed + edge node)
+  stream:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - "1935:1935"   # RTMP publish
+      - "8554:8554"   # RTSP (for edge_infer.py)
+      - "8888:8888"   # HLS
+      - "8889:8889"   # WebRTC (WHEP)
+
+volumes:
+  pgdata:

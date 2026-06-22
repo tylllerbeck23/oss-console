@@ -1,0 +1,22 @@
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Secrets — never commit license keys or env
+OSS-License-Keys.txt
+*-License-Keys.txt
+.env
+.env.*
+
+# Python backend
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Build artifacts
+*.zip
+node_modules/
