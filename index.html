@@ -450,6 +450,8 @@ body.popout #app{display:block}
 .lab-read{font:600 11px/1.4 'SF Mono','JetBrains Mono',monospace;color:#7fb4c6;letter-spacing:.04em;display:flex;gap:13px;flex-wrap:wrap;align-items:center}
 .lab-read b{color:#9fe64a}
 .lab-read .lock{color:#ff5252}
+.lab-ds{font:600 11px/1 'SF Mono','JetBrains Mono',monospace;letter-spacing:.04em;color:#7fb4c6;background:#0c1c26;border:1px solid #1d4b5e;border-radius:7px;padding:7px 10px;white-space:nowrap}
+.lab-ds b{color:#9fe64a}
 </style>
 </head>
 <body>
@@ -643,7 +645,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot">OSS Console · v<span id="app-ver">1.5</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot">OSS Console · v<span id="app-ver">1.6</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -913,6 +915,7 @@ body.popout #app{display:block}
         <button class="labbtn" id="lab-file">📁 Video file</button>
         <button class="labbtn" id="lab-screen">🖥 Capture screen / tab</button>
         <button class="labbtn" id="lab-cam">📷 Webcam</button>
+        <button class="labbtn" id="lab-drone">📡 Drone feed</button>
         <input type="file" id="lab-fileinput" accept="video/*" style="display:none">
       </div>
       <span class="sep"></span>
@@ -927,7 +930,9 @@ body.popout #app{display:block}
       <span class="lb">Label</span>
       <select class="lab-sel" id="lab-species" title="Species applied to corrected boxes"></select>
       <button class="labbtn on" id="lab-correct">✎ Correct frame</button>
+      <button class="labbtn" id="lab-auto" title="Hands-free: bank every frame with a contact, labeled with the selected species">⚡ Auto-collect</button>
       <span style="flex:1"></span>
+      <span class="lab-ds" id="lab-ds" title="Your training set so far. Aim for ~150–300 labeled fish per species before training a first model.">DATASET —</span>
       <button class="labbtn" id="lab-full" title="Fullscreen (F)">⛶</button>
     </div>
     <div class="lab-stage" id="lab-stage">
@@ -1060,7 +1065,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.5';
+const APP_VERSION='1.6';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1102,7 +1107,8 @@ const FISH = [
 ];
 // AI Vision Lab state — declared early so bootstrap-time setView()/labLeave() can reference it
 const lab = { on:false, mode:'anomaly', sens:0.6, raf:null, boxes:[], busy:false,
-              bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'', _spShort:'' };
+              bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'', _spShort:'',
+              auto:false, autoN:0, lastCap:0 };
 function labShort(n){ n=(n||'').split('(')[0].trim(); return (n.length>16?n.slice(0,16):n).toUpperCase(); }
 
 const cfg = lsGet('oss_cfg','{}') || {};
@@ -2551,6 +2557,25 @@ function labLoadFile(file){
   v.muted=true; v.loop=true; lab.srcKind='file'; v.play().catch(()=>{});
   labShowEmpty(false); labFootMode(true); labReadout('Loaded: '+file.name);
 }
+/* Tap the live OPERATE drone feed (HLS/WebRTC/MJPEG/webcam) into the Lab.
+   Uses the playing feed's MediaStream — shares srcObject when present, else
+   captureStream() — so the AI can run on the real drone video. */
+function labUseDroneFeed(){
+  const ov=$('op-feed')&&$('op-feed').querySelector('video');
+  if(!ov||!ov.videoWidth){ toast('No live drone feed yet — connect it on the CONNECT tab, then try again'); return; }
+  let stream=null, reused=false;
+  try{
+    if(ov.srcObject){ stream=ov.srcObject; reused=true; }                       // webcam / WebRTC
+    else if(ov.captureStream){ stream=ov.captureStream(); }                      // HLS / direct video
+    else if(ov.mozCaptureStream){ stream=ov.mozCaptureStream(); }
+  }catch(e){}
+  if(!stream){ toast('Could not tap the feed in this browser — try Chrome'); return; }
+  const v=labVid(); labStopStream(); v.removeAttribute('src'); v.srcObject=stream;
+  lab.stream = reused?null:stream;                 // never stop the OPERATE feed's own tracks
+  lab.srcKind='drone'; v.muted=true; v.play().catch(()=>{});
+  labShowEmpty(false); labFootMode(false); labReadout('Live drone feed — Start AI.');
+  hubLog&&hubLog('ok','AI Lab tapped the live drone feed');
+}
 function labToggleAi(){
   if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); labClearHud(); return; }
   const v=labVid(); if(!v||(!v.getAttribute('src')&&!v.srcObject)){ toast('Load a source first (Video file · Screen · Webcam)'); return; }
@@ -2565,10 +2590,33 @@ function labLoop(ts){
   if(now-lab.last>=140){ lab.last=now;
     if(lab.mode==='model'){ if(!lab.busy){ lab.busy=true; runModel(v).then(bs=>{lab.boxes=bs;lab.busy=false;}).catch(()=>{lab.busy=false; lab.mode='anomaly'; $('lab-mode').value='anomaly'; toast('Neural model unavailable — using surface-anomaly');}); } }
     else lab.boxes=detectAnomaly(v, lab);
+    if(lab.auto && (lab.boxes||[]).some(b=>(b.score||0)>0.5) && now-lab.lastCap>1400){ lab.lastCap=now; labAutoCapture(); }
   }
   drawLabHud(lab.boxes, now);
 }
 function labClearHud(){ const h=$('lab-hud'); if(h){ const x=h.getContext('2d'); x.clearRect(0,0,h.width,h.height); } }
+function labAutoToggle(){
+  if(lab.auto){ lab.auto=false; $('lab-auto').textContent='⚡ Auto-collect'; $('lab-auto').classList.remove('on'); toast('Auto-collect stopped · '+lab.autoN+' frames banked'); labUpdateCount(); return; }
+  const v=labVid(); if(!v||(!v.getAttribute('src')&&!v.srcObject)){ toast('Load a source first'); return; }
+  if(!lab.on) labToggleAi();
+  lab.auto=true; lab.autoN=0; lab.lastCap=0; $('lab-auto').textContent='■ Stop (0)'; $('lab-auto').classList.add('on');
+  toast('Auto-collecting contacts → labeled "'+($('lab-species').value)+'". Let it run.');
+}
+async function labAutoCapture(){
+  const v=labVid(); const f=frameFromVideo(v,1280); if(!f) return;
+  const sp=$('lab-species').value||'Unidentified School';
+  const boxes=(lab.boxes||[]).filter(b=>(b.score||0)>0.45).map(b=>({species:(lab.mode==='model'&&b.label&&b.label!=='disturbance')?b.label:sp, x:b.x,y:b.y,w:b.w,h:b.h}));
+  if(!boxes.length) return;
+  const s={ id:'S'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36), t:Date.now(), img:f.dataURL, w:f.w, h:f.h, boxes,
+            species:boxes[0].species, alt:state._teleAlt||null, heading:state._teleHdg||null, note:'AI Lab auto · '+(lab.srcKind||'video') };
+  try{ await dbPut(s); state._dsDirty=true; lab.autoN++; const b=$('lab-auto'); if(b&&lab.auto) b.textContent='■ Stop ('+lab.autoN+')'; labUpdateCount(); }catch(e){}
+}
+async function labUpdateCount(){
+  let s=[]; try{ s=await dbAll(); }catch(e){}
+  let fish=0; const sp=new Set();
+  s.forEach(x=>{ (x.boxes||[]).forEach(b=>{ fish++; if(b.species&&b.species!=='Unlabeled') sp.add(b.species); }); });
+  const el=$('lab-ds'); if(el) el.innerHTML=`DATASET <b>${s.length}</b> frames · <b>${fish}</b> fish · <b>${sp.size}</b> sp`;
+}
 function drawLabHud(boxes, now){
   const v=labVid(), h=$('lab-hud'), stg=$('lab-stage'); if(!v||!h||!stg) return;
   now=now||performance.now();
@@ -2610,18 +2658,21 @@ function labCorrect(){
   const boxes=(lab.boxes||[]).filter(b=>(b.score||0)>0.35).map(b=>({species:(lab.mode==='model'&&b.label&&b.label!=='disturbance')?b.label:sp, x:b.x,y:b.y,w:b.w,h:b.h}));
   const s={ id:'S'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36), t:Date.now(), img:f.dataURL, w:f.w, h:f.h, boxes,
             species: boxes.length?boxes[0].species:'Unlabeled', alt:state._teleAlt||null, heading:state._teleHdg||null, note:'AI Lab · '+(lab.srcKind||'video') };
-  dbPut(s).then(()=>{ state._dsDirty=true; openAnno(s.id); }).catch(()=>toast('Dataset storage unavailable here'));
+  dbPut(s).then(()=>{ state._dsDirty=true; labUpdateCount(); openAnno(s.id); }).catch(()=>toast('Dataset storage unavailable here'));
 }
 function labEnter(){ const sel=$('lab-species'); if(sel&&!sel.options.length) sel.innerHTML=FISH.map(f=>`<option>${f.n}</option>`).join('');
   if(sel) lab._spShort=labShort(sel.value);
-  const v=labVid(); labShowEmpty(!(v.getAttribute('src')||v.srcObject)); }
-function labLeave(){ if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); } }
+  const v=labVid(); labShowEmpty(!(v.getAttribute('src')||v.srcObject)); labUpdateCount(); }
+function labLeave(){ if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); }
+  if(lab.auto){ lab.auto=false; const b=$('lab-auto'); if(b){ b.textContent='⚡ Auto-collect'; b.classList.remove('on'); } } }
 function initLab(){
   $('lab-file').onclick=()=>labSetSource('file');
   $('lab-fileinput').onchange=e=>labLoadFile(e.target.files&&e.target.files[0]);
   $('lab-screen').onclick=()=>labSetSource('screen');
   $('lab-cam').onclick=()=>labSetSource('cam');
+  $('lab-drone').onclick=labUseDroneFeed;
   $('lab-ai').onclick=labToggleAi;
+  $('lab-auto').onclick=labAutoToggle;
   $('lab-mode').onchange=()=>{ lab.mode=$('lab-mode').value; };
   $('lab-sens').oninput=()=>{ lab.sens=+$('lab-sens').value; };
   $('lab-species').onchange=()=>{ lab._spShort=labShort($('lab-species').value); };
