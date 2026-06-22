@@ -274,11 +274,20 @@ body.popout #app{display:block}
 .ds-breakdown{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
 .dchip{font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 11px;color:var(--ink2)}
 .dchip b{color:var(--brand)}
-.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.dscell{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:pointer;box-shadow:var(--sh-sm);aspect-ratio:4/3}
-.dscell img{width:100%;height:100%;object-fit:cover;display:block}
+.ds-grid{columns:160px;column-gap:12px}
+.dscell{position:relative;break-inside:avoid;margin:0 0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:pointer;box-shadow:var(--sh-sm);display:block}
+.dscell img{width:100%;height:auto;display:block}
 .dscell.unl{outline:2px solid var(--amber);outline-offset:-2px}
-.dscell .dsmeta{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:6px;padding:5px 8px;font-size:10.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.dsbox{position:absolute;border:2px solid #19e6a4;border-radius:2px;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+.dsbox span{position:absolute;left:-1px;top:0;font:700 9px var(--mono);background:#19e6a4;color:#06121c;padding:1px 4px;border-radius:3px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.dscell .dsmeta{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:6px;padding:5px 8px;font-size:10.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.ds-filter{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:13px}
+.ds-fbtn{font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:5px 13px;color:var(--ink2);cursor:pointer}
+.ds-fbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ds-filter select{font-size:11.5px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2)}
+.ds-sync{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:15px;box-shadow:var(--sh-sm)}
+.ds-sync .si{flex:1;min-width:240px;font-size:12px;line-height:1.5;color:var(--ink2)}
+.ds-sync .si b{color:var(--ink)}
 .lib-h{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--ink);margin:24px 0 4px}
 .vid-add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .vid-add input[type=text],.vid-add #vid-url,.vid-add #vid-title,.vid-add #vid-species{flex:1;min-width:140px}
@@ -654,7 +663,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot">OSS Console · v<span id="app-ver">1.7</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot">OSS Console · v<span id="app-ver">1.8</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -840,6 +849,18 @@ body.popout #app{display:block}
         </div>
       </div>
       <div class="ds-breakdown" id="ds-breakdown"></div>
+      <div class="ds-sync">
+        <div class="si">💾 <b>Where your data lives:</b> every frame is saved in this browser, on <b>this device</b> — private and offline. It does <b>not</b> auto-sync to other computers. To move it: <b>Export backup</b> here → copy the file to the other machine → <b>Import backup</b> there. (For true multi-device sync, run the Cloud Data Hub below.)</div>
+        <button class="btn sm primary" id="ds-bkexport">⤓ Export backup</button>
+        <button class="btn sm" id="ds-bkimport">⤒ Import backup</button>
+        <input id="ds-bkfile" type="file" accept="application/json,.json" style="display:none">
+      </div>
+      <div class="ds-filter" id="ds-filter">
+        <button class="ds-fbtn on" data-f="all">All</button>
+        <button class="ds-fbtn" data-f="labeled">Labeled</button>
+        <button class="ds-fbtn" data-f="unlabeled">Unlabeled</button>
+        <select id="ds-fsp"><option value="all">All species</option></select>
+      </div>
       <div class="ds-grid" id="ds-grid"></div>
 
       <h3 class="lib-h">Training Footage Library</h3>
@@ -1075,7 +1096,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.7';
+const APP_VERSION='1.8';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -2083,7 +2104,7 @@ function captureToDataset(){
   captureSample({species:'Unlabeled'}).then(s=>{ if(s){ toast('Frame captured — label it on the DATA tab'); } });
 }
 
-let _dsCache=[];
+let _dsCache=[]; let _dsFilter={mode:'all', sp:'all'};
 async function renderDataset(){
   const grid=$('ds-grid'); if(!grid) return;
   let rows; try{ rows=await dbAll(); }catch(e){ rows=[]; if(_dbBad){ grid.innerHTML='<div class="note" style="padding:20px">Local image storage (IndexedDB) is unavailable in this browser/mode. Open the hosted (https) version to collect a dataset.</div>'; return; } }
@@ -2091,14 +2112,19 @@ async function renderDataset(){
   const boxes=rows.reduce((n,s)=>n+(s.boxes?s.boxes.length:0),0);
   const labeled=rows.filter(s=>s.boxes&&s.boxes.length).length;
   const bySpecies={}; rows.forEach(s=>(s.boxes||[]).forEach(b=>bySpecies[b.species]=(bySpecies[b.species]||0)+1));
-  $('ds-stat').innerHTML=`<b>${rows.length}</b> frames · <b>${labeled}</b> labeled · <b>${boxes}</b> boxes · <b>${Object.keys(bySpecies).length}</b> species`;
+  let store=''; try{ if(navigator.storage&&navigator.storage.estimate){ const e=await navigator.storage.estimate(); if(e&&e.usage) store=` · <b>${(e.usage/1048576).toFixed(1)} MB</b> used`; } }catch(e){}
+  $('ds-stat').innerHTML=`<b>${rows.length}</b> frames · <b>${labeled}</b> labeled · <b>${boxes}</b> boxes · <b>${Object.keys(bySpecies).length}</b> species${store}`;
   $('ds-breakdown').innerHTML=Object.keys(bySpecies).length? Object.entries(bySpecies).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="dchip">${k} <b>${v}</b></span>`).join('') : '<span class="note">Draw boxes on captured frames to label schools.</span>';
-  grid.innerHTML = rows.length ? rows.map(s=>`
-    <div class="dscell ${s.boxes&&s.boxes.length?'':'unl'}" data-id="${s.id}">
-      <img src="${s.img}" alt="frame" loading="lazy">
-      <div class="dsmeta"><span>${s.boxes&&s.boxes.length? s.boxes.length+' box'+(s.boxes.length>1?'es':'') : 'unlabeled'}</span>
-        <span>${new Date(s.t).toLocaleDateString([], {month:'short',day:'numeric'})}</span></div>
-    </div>`).join('') : '<div class="note" style="padding:24px;grid-column:1/-1;text-align:center">No frames yet. On the OPERATE tab connect a feed (or webcam) and tap “Capture Frame”, or mark a fish — each one banks a frame here to label.</div>';
+  const fsp=$('ds-fsp'); if(fsp){ const cur=_dsFilter.sp; fsp.innerHTML='<option value="all">All species</option>'+Object.keys(bySpecies).sort().map(k=>`<option value="${k}">${k} (${bySpecies[k]})</option>`).join(''); fsp.value=[...fsp.options].some(o=>o.value===cur)?cur:'all'; _dsFilter.sp=fsp.value; }
+  let view=_dsCache;
+  if(_dsFilter.mode==='labeled') view=view.filter(s=>s.boxes&&s.boxes.length);
+  else if(_dsFilter.mode==='unlabeled') view=view.filter(s=>!s.boxes||!s.boxes.length);
+  if(_dsFilter.sp!=='all') view=view.filter(s=>(s.boxes||[]).some(b=>b.species===_dsFilter.sp));
+  grid.innerHTML = view.length ? view.map(s=>{
+    const bx=(s.boxes||[]).map(b=>`<div class="dsbox" style="left:${(b.x*100).toFixed(2)}%;top:${(b.y*100).toFixed(2)}%;width:${(b.w*100).toFixed(2)}%;height:${(b.h*100).toFixed(2)}%"><span>${b.species||'?'}</span></div>`).join('');
+    const lbl = s.boxes&&s.boxes.length ? (s.boxes.length+' box'+(s.boxes.length>1?'es':'')) : 'unlabeled';
+    return `<div class="dscell ${s.boxes&&s.boxes.length?'':'unl'}" data-id="${s.id}"><img src="${s.img}" alt="frame" loading="lazy">${bx}<div class="dsmeta"><span>${lbl}</span><span>${new Date(s.t).toLocaleDateString([], {month:'short',day:'numeric'})}</span></div></div>`;
+  }).join('') : `<div class="note" style="padding:24px;text-align:center">${rows.length?'No frames match this filter.':'No frames yet. Use the AI LAB (📡 Drone feed / 📁 clip → Start AI → Correct frame or Auto-collect), or mark a fish on OPERATE — each banks a frame here.'}</div>`;
   grid.querySelectorAll('.dscell').forEach(c=>c.onclick=()=>openAnno(c.dataset.id));
 }
 
@@ -2843,6 +2869,11 @@ function initApp(){
   // data / lab (training dataset)
   $('ds-capture').onclick=()=>captureToDataset();
   $('ds-export').onclick=()=>exportDataset();
+  document.querySelectorAll('#ds-filter .ds-fbtn').forEach(b=>b.onclick=()=>{ _dsFilter.mode=b.dataset.f; document.querySelectorAll('#ds-filter .ds-fbtn').forEach(x=>x.classList.toggle('on',x===b)); renderDataset(); });
+  $('ds-fsp').onchange=()=>{ _dsFilter.sp=$('ds-fsp').value; renderDataset(); };
+  $('ds-bkexport').onclick=()=>exportAll();
+  $('ds-bkimport').onclick=()=>$('ds-bkfile').click();
+  $('ds-bkfile').onchange=e=>importAll(e.target.files&&e.target.files[0]);
   // training footage library
   $('vid-add').onclick=()=>addVideo();
   $('vid-url').addEventListener('keydown',e=>{ if(e.key==='Enter') addVideo(); });
