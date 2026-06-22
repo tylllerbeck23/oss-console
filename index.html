@@ -641,6 +641,7 @@ body.popout #app{display:block}
       <div class="pill" id="pill-gps"><b></b>GPS</div>
       <div class="pill" id="pill-feed"><b></b>FEED</div>
       <div class="pill" id="pill-drone"><b></b>DRONE</div>
+      <button class="iconbtn" id="btn-editions" title="Back to edition launcher (Fishing · SAR · CAP)">⌂ Editions</button>
       <button class="iconbtn" id="btn-guide" title="How to link your drone">📖 Guide</button>
       <button class="iconbtn" id="btn-bell" title="Notifications">🔔<span id="bell-badge"></span></button>
       <button class="iconbtn" id="btn-comms" title="Comms · frequencies · live monitor">📻 Comms</button>
@@ -749,7 +750,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.6</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.7</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1258,7 +1259,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.6';
+const APP_VERSION='2.7';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -3380,6 +3381,7 @@ function initApp(){
   renderBell(); renderNotifs();
 
   // drone-linking guide
+  $('btn-editions').onclick=()=>{ if(confirm('Return to the edition launcher? (Fishing · SAR · CAP)\nYour data and activation are kept.')) switchEdition(); };
   $('btn-guide').onclick=()=>$('guide-modal').classList.remove('hidden');
   $('guide-close').onclick=()=>$('guide-modal').classList.add('hidden');
   $('guide-ok').onclick=()=>$('guide-modal').classList.add('hidden');
