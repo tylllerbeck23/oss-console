@@ -1,7 +1,7 @@
 /* OSS Console service worker — offline app shell.
    Network-first for the app HTML (so it never serves a stale build), cache-first
    for libraries and already-viewed map tiles (so the chart works offline at sea). */
-const C = 'oss-v12';
+const C = 'oss-v13';
 const SHELL = [
   './', './index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
