@@ -643,7 +643,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot">OSS Console · v<span id="app-ver">1.4</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot">OSS Console · v<span id="app-ver">1.5</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1060,7 +1060,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.4';
+const APP_VERSION='1.5';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1102,7 +1102,8 @@ const FISH = [
 ];
 // AI Vision Lab state — declared early so bootstrap-time setView()/labLeave() can reference it
 const lab = { on:false, mode:'anomaly', sens:0.6, raf:null, boxes:[], busy:false,
-              bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'' };
+              bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'', _spShort:'' };
+function labShort(n){ n=(n||'').split('(')[0].trim(); return (n.length>16?n.slice(0,16):n).toUpperCase(); }
 
 const cfg = lsGet('oss_cfg','{}') || {};
 const state = {
@@ -2590,7 +2591,10 @@ function drawLabHud(boxes, now){
     const cl=Math.max(8,Math.min(bw,bh)*0.28); x.strokeStyle=col; x.lineWidth=2;
     [[bx,by,1,1],[bx+bw,by,-1,1],[bx,by+bh,1,-1],[bx+bw,by+bh,-1,-1]].forEach(c=>{ x.beginPath(); x.moveTo(c[0],c[1]+cl*c[3]); x.lineTo(c[0],c[1]); x.lineTo(c[0]+cl*c[2],c[1]); x.stroke(); });
     const ccx=bx+bw/2, ccy=by+bh/2; x.lineWidth=1; x.beginPath(); x.moveTo(ccx-6,ccy); x.lineTo(ccx+6,ccy); x.moveTo(ccx,ccy-6); x.lineTo(ccx,ccy+6); x.stroke();
-    const tag=(lock?'◉ LOCK ':'◎ TRACK ')+((b.label&&b.label!=='disturbance')?b.label+' ':'')+Math.round((b.score||0)*100)+'%';
+    const pct=Math.round((b.score||0)*100)+'%';
+    const tag=(b.label&&b.label!=='disturbance')
+      ? (lock?'◉ ':'◎ ')+b.label+' '+pct                                  // neural model class
+      : (lock?'◉ LOCK':'◎ TRACK')+(lab._spShort?' · ? '+lab._spShort:'')+' '+pct;  // contact + your proposed species
     x.font="700 11px 'SF Mono','JetBrains Mono',monospace"; const tw=x.measureText(tag).width+10, ty=by>16?by-16:by+bh+2;
     x.fillStyle=lock?'rgba(255,77,77,.92)':'rgba(15,34,32,.85)'; x.fillRect(bx,ty,tw,15);
     x.fillStyle=lock?'#fff':col; x.fillText(tag,bx+5,ty+11);
@@ -2609,6 +2613,7 @@ function labCorrect(){
   dbPut(s).then(()=>{ state._dsDirty=true; openAnno(s.id); }).catch(()=>toast('Dataset storage unavailable here'));
 }
 function labEnter(){ const sel=$('lab-species'); if(sel&&!sel.options.length) sel.innerHTML=FISH.map(f=>`<option>${f.n}</option>`).join('');
+  if(sel) lab._spShort=labShort(sel.value);
   const v=labVid(); labShowEmpty(!(v.getAttribute('src')||v.srcObject)); }
 function labLeave(){ if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); } }
 function initLab(){
@@ -2619,6 +2624,7 @@ function initLab(){
   $('lab-ai').onclick=labToggleAi;
   $('lab-mode').onchange=()=>{ lab.mode=$('lab-mode').value; };
   $('lab-sens').oninput=()=>{ lab.sens=+$('lab-sens').value; };
+  $('lab-species').onchange=()=>{ lab._spShort=labShort($('lab-species').value); };
   $('lab-correct').onclick=labCorrect;
   $('lab-full').onclick=()=>toggleFullscreen();
   const v=labVid();
