@@ -719,7 +719,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.1</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.2</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1195,7 +1195,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.1';
+const APP_VERSION='2.2';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1707,6 +1707,42 @@ function searchCenter(){ return state.searchCenter || vesselPoint(); }
    ============================================================================ */
 const NM_M=1852;                                  // metres per nautical mile
 const LEEWAY={piw:0.020, raft:0.045, boat:0.052, debris:0.030};  // leeway speed as fraction of wind speed
+/* ===== Coordinate formats — DD / DDM / MGRS-USNG (WGS84) ===== */
+function _utm(lat,lon){
+  const a=6378137.0,f=1/298.257223563,e2=f*(2-f),ep2=e2/(1-e2),k0=0.9996,rad=Math.PI/180;
+  const zone=Math.floor((lon+180)/6)+1, lon0=((zone-1)*6-180+3)*rad;
+  const la=lat*rad, lo=lon*rad;
+  const N=a/Math.sqrt(1-e2*Math.sin(la)**2), T=Math.tan(la)**2, C=ep2*Math.cos(la)**2, A=Math.cos(la)*(lo-lon0);
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*la-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*la)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*la)-(35*e2**3/3072)*Math.sin(6*la));
+  let E=k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120)+500000;
+  let Nn=k0*(M+N*Math.tan(la)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720));
+  if(lat<0) Nn+=1e7;
+  return {zone,E,Nn};
+}
+function _band(lat){ if(lat>=72&&lat<=84) return 'X'; if(lat<-80||lat>84) return 'Z'; return 'CDEFGHJKLMNPQRSTUVWX'.charAt(Math.floor((lat+80)/8)); }
+function _100k(E,Nn,zone){
+  const A=65,I=73,O=79,V=86,Z=90;
+  const colOrig=['A','J','S','A','J','S'][(zone-1)%6].charCodeAt(0);
+  const rowOrig=['A','F','A','F','A','F'][(zone-1)%6].charCodeAt(0);
+  let col=Math.floor(E/100000), row=Math.floor(Nn/100000)%20;
+  let ci=colOrig+col-1, ri=rowOrig+row, ro=false;
+  if(ci>Z){ ci=ci-Z+A-1; ro=true; }
+  if(ci===I||(colOrig<I&&ci>I)||((ci>I||colOrig<I)&&ro)) ci++;
+  if(ci===O||(colOrig<O&&ci>O)||((ci>O||colOrig<O)&&ro)){ ci++; if(ci===I) ci++; }
+  if(ci>Z) ci=ci-Z+A-1;
+  ro = ri>V; if(ri>V) ri=ri-V+A-1;
+  if(ri===I||(rowOrig<I&&ri>I)||((ri>I||rowOrig<I)&&ro)) ri++;
+  if(ri===O||(rowOrig<O&&ri>O)||((ri>O||rowOrig<O)&&ro)){ ri++; if(ri===I) ri++; }
+  if(ri>V) ri=ri-V+A-1;
+  return String.fromCharCode(ci)+String.fromCharCode(ri);
+}
+function toMGRS(lat,lng,spaced){
+  try{ const u=_utm(lat,lng); const sq=_100k(u.E,u.Nn,u.zone);
+    const e=('00000'+Math.floor(u.E%100000)).slice(-5), n=('00000'+Math.floor(u.Nn%100000)).slice(-5);
+    return spaced ? `${u.zone}${_band(lat)} ${sq} ${e} ${n}` : `${u.zone}${_band(lat)}${sq}${e}${n}`;
+  }catch(e){ return '—'; }
+}
+function ddm(lat,lng){ const f=(v,p)=>{ const d=Math.abs(v),deg=Math.floor(d),min=(d-deg)*60; return `${deg}°${min.toFixed(3)}'${v<0?p[1]:p[0]}`; }; return f(lat,'NS')+' '+f(lng,'EW'); }
 function destPoint(lat,lng,brgDeg,distM){
   const R=6371000, d=distM/R, b=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180;
   const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));
@@ -1733,7 +1769,7 @@ function computeDatum(){
   const radNm=Math.max(0.3,(E0+0.33*driftNm)*1.1);
   state.datum={lat:d.lat,lng:d.lng,brg:driftBrg,distNm:driftNm,radNm,H,driftKt,leewayKt};
   drawDatum();
-  $('d-out').innerHTML=`Drift <b>${Math.round(driftBrg)}°T · ${driftNm.toFixed(2)} NM</b> in ${H} h (${driftKt.toFixed(2)} kt · leeway ${leewayKt.toFixed(2)} kt)<br>Datum <b>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</b><br>Search radius <b>${radNm.toFixed(2)} NM</b> (${(radNm*1.15078).toFixed(2)} mi)`;
+  $('d-out').innerHTML=`Drift <b>${Math.round(driftBrg)}°T · ${driftNm.toFixed(2)} NM</b> in ${H} h (${driftKt.toFixed(2)} kt · leeway ${leewayKt.toFixed(2)} kt)<br>Datum <b>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</b><br>Grid <b>${toMGRS(d.lat,d.lng,true)}</b><br>Search radius <b>${radNm.toFixed(2)} NM</b> (${(radNm*1.15078).toFixed(2)} mi)`;
 }
 function drawDatum(){
   const g=state.layers&&state.layers.datum; if(!g) return; g.clearLayers();
@@ -2152,18 +2188,39 @@ function deleteDetection(id){
   const i=state.detections.findIndex(x=>x.id===id); if(i<0) return;
   state.detections.splice(i,1); saveDet(); renderDetections(); updateHeat(); renderLogbook();
 }
+/* ---- SAR contact relay: formatted position report to copy to Coast Guard / IC ---- */
+function relayMsg(d){
+  const hdr=(EDITION==='fish'?'FISH CONTACT':'SAR CONTACT')+' · '+curProfile().name;
+  return [hdr,
+    'TIME '+new Date(d.t||Date.now()).toLocaleString(),
+    'TYPE '+d.species+(d.count>1?' ×'+d.count:''),
+    'POS  '+d.lat.toFixed(5)+', '+d.lng.toFixed(5),
+    'DDM  '+ddm(d.lat,d.lng),
+    'GRID '+toMGRS(d.lat,d.lng,true),
+    d.conf?'CONF '+Math.round(d.conf)+'%':null,
+    d.note?'NOTE '+d.note:null
+  ].filter(Boolean).join('\n');
+}
+function relayContact(id){
+  const d=state.detections.find(x=>x.id===id); if(!d) return;
+  const msg=relayMsg(d);
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(msg).then(()=>toast('📋 Relay copied — paste to Coast Guard / IC')).catch(()=>prompt('Copy this relay:',msg)); }
+  else prompt('Copy this relay:',msg);
+  hubLog&&hubLog('ok','Contact relay · '+toMGRS(d.lat,d.lng,false));
+}
+function cUnit(c){ return EDITION==='fish'?('~'+c+' fish'):(c>1?c+' pax/objs':'1'); }
 function renderDetections(){
   const list=$('det-list'); if(list) list.innerHTML=state.detections.slice().reverse().map(d=>`
     <div class="det ${d.game?'prize':''}" data-id="${d.id}">
       <span class="ic"></span>
-      <div class="m"><div class="t">${d.species}${d.game?' 🎯':''}</div><div class="s">${d.id} · ~${d.count} fish · ${Math.round(d.conf||0)}% · ${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</div></div>
+      <div class="m"><div class="t">${d.species}${d.game?' 🎯':''}</div><div class="s">${cUnit(d.count)} · ${Math.round(d.conf||0)}% · ${EDITION==='fish'?d.lat.toFixed(4)+', '+d.lng.toFixed(4):toMGRS(d.lat,d.lng,true)}</div></div>
       <button class="det-x" data-del="${d.id}" title="Delete">✕</button>
-    </div>`).join('') || '<div class="note" style="padding:0 16px 14px">No contacts yet. Tap “Mark Fish on Map”, or live AI detections will land here automatically.</div>';
+    </div>`).join('') || `<div class="note" style="padding:0 16px 14px">No contacts yet. Tap “Mark ${EDITION==='fish'?'Fish':'Contact'} on Map”, or live AI detections land here automatically.</div>`;
   if(list){ list.querySelectorAll('.det').forEach(el=>el.onclick=()=>{ const d=state.detections.find(x=>x.id===el.dataset.id); if(d&&state.map){ setView('operate'); state.map.setView([d.lat,d.lng],15);} });
     list.querySelectorAll('[data-del]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); deleteDetection(b.dataset.del); }); }
   const g=state.layers&&state.layers.det; if(g){ g.clearLayers();
     state.detections.forEach(d=>{ L.circleMarker([d.lat,d.lng],{radius:8,color:d.game?'#ea580c':'#c2700a',fillColor:d.game?'#ea580c':'#e0a020',fillOpacity:.75,weight:2}).addTo(g)
-      .bindPopup(`<b>${d.species}</b>${d.game?' 🎯':''}<br>${d.id} · ~${d.count} fish · ${Math.round(d.conf||0)}% conf${d.note?'<br><i>'+d.note+'</i>':''}`); }); }
+      .bindPopup(`<b>${d.species}</b>${d.game?' 🎯':''}<br>${cUnit(d.count)} · ${Math.round(d.conf||0)}% conf${d.note?'<br><i>'+d.note+'</i>':''}<br><span style="font:600 10px monospace">${toMGRS(d.lat,d.lng,true)}</span><br><button onclick="relayContact('${d.id}')" style="margin-top:5px;font-size:11px;padding:3px 9px;border:none;border-radius:6px;background:var(--brand,#c01f2f);color:#fff;cursor:pointer">📋 Relay</button>`); }); }
 }
 
 /* ============================================================================
