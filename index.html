@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13.
 a{color:var(--brand)}
 :focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
 
-#app{display:grid;grid-template-rows:58px 1fr;height:100vh;height:100dvh}
+#app{display:grid;grid-template-rows:58px 46px 1fr;height:100vh;height:100dvh}
 
 /* ---------- top bar / branding ---------- */
 #topbar{display:flex;align-items:center;gap:16px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--sh-sm);z-index:5}
@@ -49,10 +49,25 @@ a{color:var(--brand)}
 .brand h1{font-family:var(--sans);font-size:19px;font-weight:800;letter-spacing:.4px;line-height:1;color:var(--ink);display:flex;align-items:baseline;gap:6px}
 .brand h1 .lite{color:var(--brand);font-weight:800}
 .brand .sub{font-size:9px;color:var(--dim);letter-spacing:2.4px;margin-top:3px;font-weight:700}
-.tabs{display:flex;gap:5px;margin-left:10px}
-.tab{font-family:var(--sans);font-size:12.5px;letter-spacing:.2px;padding:9px 16px;border-radius:9px;cursor:pointer;color:var(--dim);border:1px solid transparent;font-weight:600}
-.tab:hover{background:var(--panel2);color:var(--ink)}
-.tab.on{background:var(--brandlt);color:var(--brand);border-color:#bfe3ec}
+#navbar{display:flex;align-items:stretch;background:var(--panel);border-bottom:1px solid var(--line);padding:0 10px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-shadow:var(--sh-sm);z-index:4}
+#navbar::-webkit-scrollbar{display:none}
+.tabs{display:flex;gap:1px;align-items:stretch}
+.tab{display:flex;align-items:center;gap:8px;padding:0 17px;cursor:pointer;color:var(--dim);font:600 12.5px var(--sans);letter-spacing:.2px;border-bottom:2.5px solid transparent;white-space:nowrap;transition:color .12s,border-color .12s,background .12s;position:relative}
+.tab .tic{width:16px;height:16px;flex:none;opacity:.8}
+.tab:hover{color:var(--ink);background:var(--panel2)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand);background:linear-gradient(var(--brandlt),transparent)}
+.tab.on .tic{opacity:1}
+/* ops mission status header */
+.ops-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 7px}
+.ops-state{display:flex;align-items:center;gap:8px;font:800 12px var(--sans);letter-spacing:1.2px;color:var(--ink)}
+.ops-dot{width:9px;height:9px;border-radius:50%;background:#b9c6d1}
+.ops-dot.live{background:var(--ok);box-shadow:0 0 0 3px rgba(22,163,74,.16);animation:opspulse 1.7s infinite}
+@keyframes opspulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ops-timer{font:700 16px var(--mono);color:var(--brand);letter-spacing:1px}
+.ops-chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 11px;border-bottom:1px solid var(--line)}
+.opc{font:700 9.5px var(--mono);letter-spacing:.5px;padding:4px 9px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:#aab8c4}
+.opc.on{color:var(--ok);background:#e7f7f0;border-color:#bce8d6}
+.opc.ct{color:var(--brand);background:var(--brandlt);border-color:#bfe3ec}
 .status-pills{display:flex;gap:8px;margin-left:auto;align-items:center}
 .pill{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.3px;font-weight:600;padding:6px 11px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
 .pill b{width:8px;height:8px;border-radius:50%;background:#b9c6d1}
@@ -489,7 +504,7 @@ body.popout #app{display:block}
 .cm-le .x{float:right;cursor:pointer;color:var(--dim);margin-left:6px}
 @media(max-width:640px){#comms-center{width:100%;top:auto;bottom:0;height:74vh;border-left:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0}#comms-center.hidden{transform:translateY(105%)}}
 /* ===== AI VISION LAB (tactical) ===== */
-#view-lab{display:none;flex-direction:column;background:#070d12;color:#cfe7ef;height:calc(100vh - 112px);min-height:460px}
+#view-lab{display:none;flex-direction:column;background:#070d12;color:#cfe7ef;height:100%;min-height:460px;overflow:hidden}
 .lab-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;background:#0a141c;border-bottom:1px solid #16323f}
 .lab-bar .grp{display:flex;gap:6px;align-items:center}
 .lab-bar .sep{width:1px;align-self:stretch;background:#1c3b4a;margin:0 3px}
@@ -622,15 +637,6 @@ body.popout #app{display:block}
       </svg>
       <div><h1 id="brand-h1">OSS <span class="lite">CONSOLE</span></h1><div class="sub" id="brand-sub">MARINE INTELLIGENCE</div></div>
     </div>
-    <div class="tabs">
-      <div class="tab" data-view="connect">① CONNECT</div>
-      <div class="tab" data-view="operate">② OPERATE</div>
-      <div class="tab" data-view="plan">③ PLAN FLIGHT</div>
-      <div class="tab" data-view="log">④ LOGBOOK</div>
-      <div class="tab" data-view="data">⑤ DATA / LAB</div>
-      <div class="tab" data-view="hub">⑥ DATA HUB</div>
-      <div class="tab" data-view="lab">⑦ AI LAB</div>
-    </div>
     <div class="status-pills">
       <div class="pill" id="pill-gps"><b></b>GPS</div>
       <div class="pill" id="pill-feed"><b></b>FEED</div>
@@ -643,6 +649,7 @@ body.popout #app{display:block}
       <button class="iconbtn" id="btn-full" title="Fullscreen (F)">⛶</button>
     </div>
   </header>
+  <nav id="navbar"><div class="tabs" id="tabs"></div></nav>
 
   <!-- ===== CONNECT VIEW ===== -->
   <section id="view-connect">
@@ -742,7 +749,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.5</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.6</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -763,7 +770,16 @@ body.popout #app{display:block}
     <!-- side panel: OPERATE -->
     <aside id="side">
       <div id="side-operate">
-        <div class="side-hd"><span class="dot"></span> LIVE FLIGHT</div>
+        <div class="ops-hd">
+          <div class="ops-state"><span class="ops-dot" id="ops-dot"></span><span id="ops-state">STANDBY</span></div>
+          <div class="ops-timer" id="ops-timer" title="Mission / sortie time">00:00</div>
+        </div>
+        <div class="ops-chips">
+          <span class="opc" id="opc-feed">● FEED</span>
+          <span class="opc" id="opc-ai">● AI</span>
+          <span class="opc" id="opc-gps">● GPS</span>
+          <span class="opc ct" id="opc-ct">0</span>
+        </div>
         <div class="livefeed" id="op-feed">
           <div class="lf-empty" id="op-feed-empty">◎ No feed connected<br><span style="font-size:10px;color:var(--faint)">Link the drone camera on the CONNECT tab</span></div>
           <canvas id="ai-overlay" class="ai-ov"></canvas>
@@ -799,7 +815,7 @@ body.popout #app{display:block}
           <div class="note" id="ai-status">AI idle. Connect a feed, then Start Live AI — it watches for surface disturbance (nervous water, boils) and flags candidates in real time. “Label Live” grabs the current frame to box &amp; tag schools on the spot during testing.</div>
         </div>
         <div class="sec">
-          <h4>Trip Conditions</h4>
+          <h4 id="hd-cond">Trip Conditions</h4>
           <div class="cond-grid">
             <label class="fld"><span class="lab">Wind</span><input id="cd-wind" placeholder="10 kt SE"></label>
             <label class="fld"><span class="lab">Water temp °F</span><input id="cd-temp" type="number" placeholder="78"></label>
@@ -809,7 +825,7 @@ body.popout #app{display:block}
           <div class="note">Set once per trip — it’s stamped onto every contact you log, so your hotspot history learns which conditions hold fish.</div>
         </div>
         <div class="sec">
-          <h4>Fish Detections</h4>
+          <h4 id="hd-det">Fish Detections</h4>
           <div class="row">
             <button class="btn sm cyan" id="op-mark">＋ Mark Fish on Map</button>
             <button class="btn sm" id="op-cleardet">Clear</button>
@@ -1242,7 +1258,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.5';
+const APP_VERSION='2.6';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1282,6 +1298,16 @@ const FISH = [
   {n:'Bait Ball (Threadfin / Sardine)', game:false, bait:true}, {n:'Mullet School', game:false, bait:true},
   {n:'Unidentified School', game:false},
 ];
+// Nav icons — declared early so bootstrap-time initApp()/renderNav() can reference them
+const ICN={
+  connect:'<path d="M5 12a7 7 0 0 1 14 0"/><path d="M8.4 12a3.6 3.6 0 0 1 7.2 0"/><circle cx="12" cy="12.2" r="1.3" fill="currentColor" stroke="none"/>',
+  operate:'<circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3.4M12 18.1v3.4M2.5 12h3.4M18.1 12h3.4"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  plan:'<path d="M9 4 3.8 6.2v13.8L9 17.8l6 2.2 5.2-2.2V4L15 6.2 9 4z"/><path d="M9 4v13.8M15 6.2V20"/>',
+  log:'<path d="M5 5.5h14M5 12h14M5 18.5h9"/>',
+  data:'<path d="M12 3 3.5 7 12 11l8.5-4L12 3z"/><path d="M3.5 12 12 16l8.5-4M3.5 17 12 21l8.5-4"/>',
+  hub:'<rect x="3.5" y="4" width="17" height="6" rx="1.6"/><rect x="3.5" y="14" width="17" height="6" rx="1.6"/><circle cx="7" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r="1.1" fill="currentColor" stroke="none"/>',
+  lab:'<path d="M10 3.5v5.2L5.3 17.4A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.7-3.1L14 8.7V3.5"/><path d="M8.6 3.5h6.8M9.2 13.5h5.6"/>',
+};
 // AI Vision Lab state — declared early so bootstrap-time setView()/labLeave() can reference it
 const lab = { on:false, mode:'anomaly', sens:0.6, raf:null, boxes:[], busy:false,
               bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'', _spShort:'',
@@ -1392,6 +1418,8 @@ function applyProfile(ed){
   t('mk-splabel','Species','Target type');
   t('mk-countlabel','Approx count','Count');
   t('cardlog-title','Catch Logbook → Google Sheets','Contact Log → Google Sheets');
+  t('hd-det','Fish Detections','Contacts');
+  t('hd-cond','Trip Conditions','On-Scene Conditions');
   const cb=$('cardlog-body'); if(cb) cb.innerHTML = sar
     ? 'Every contact you mark is saved on this device and plotted on the hotspot map (LOGBOOK tab). Optionally mirror each one into a <b>Google Sheet</b> so your whole team / mission base shares one running log.'
     : 'Every fish you spot is saved on this device and plotted as a hotspot heatmap (LOGBOOK tab). Optionally mirror every spot into a <b>Google Sheet</b> so your whole crew shares one running history of where fish have been found.';
@@ -2965,8 +2993,20 @@ function updateHealth(){
   const tlive = state._teleLastT && (Date.now()-state._teleLastT < 8000);
   if($('pill-feed')) $('pill-feed').className='pill'+(h.feedLive?' ok':'');
   if($('pill-drone')) $('pill-drone').className='pill'+(tlive?' ok':'');
+  // ops mission status header + sortie timer
+  const gps=!!(state.home||state.vesselPos), aiOn=(typeof ai!=='undefined'&&ai.on);
+  const active = h.feedLive||aiOn||tlive;
+  if(active && !state._opsStart) state._opsStart=Date.now();
+  if(!active) state._opsStart=null;
+  const dot=$('ops-dot'); if(dot) dot.classList.toggle('live',active);
+  const st=$('ops-state'); if(st) st.textContent = aiOn?'TRACKING':(active?'ON STATION':'STANDBY');
+  const tm=$('ops-timer'); if(tm) tm.textContent = state._opsStart? fmtClock(Date.now()-state._opsStart) : '00:00';
+  const setC=(id,on)=>{ const e=$(id); if(e) e.classList.toggle('on',!!on); };
+  setC('opc-feed',h.feedLive); setC('opc-ai',aiOn); setC('opc-gps',gps);
+  const ct=$('opc-ct'); if(ct){ const n=state.detections.length, w=EDITION==='fish'?'spot':'contact'; ct.textContent=n+' '+w+(n===1?'':'s'); }
   if(state.view==='hub') renderHub();
 }
+function fmtClock(ms){ let s=Math.floor(ms/1000); const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); s-=m*60; const p=n=>(''+n).padStart(2,'0'); return (h?p(h)+':':'')+p(m)+':'+p(s); }
 function setCard(key,dot,val,sub){ const d=$('d-'+key),vv=$('v-'+key),s=$('s-'+key); if(d)d.className='hc-dot '+(dot||'off'); if(vv)vv.textContent=val; if(s)s.textContent=sub||''; }
 function renderHub(){
   const h=state.health, v=$('op-feed')&&$('op-feed').querySelector('video');
@@ -3232,6 +3272,20 @@ function initLab(){
   $('lab-seek').oninput=()=>{ if(v.duration) v.currentTime=(+$('lab-seek').value/1000)*v.duration; };
 }
 
+/* ===== primary navigation — icon tabs, edition-aware labels ===== */
+function navItems(){ const sar=EDITION!=='fish'; return [
+  {v:'connect',l:'Connect',i:'connect'},
+  {v:'operate',l:'Operate',i:'operate'},
+  {v:'plan',l:sar?'Search Plan':'Plan',i:'plan'},
+  {v:'log',l:sar?'Contacts':'Logbook',i:'log'},
+  {v:'data',l:sar?'Training':'Dataset',i:'data'},
+  {v:'hub',l:'Data Hub',i:'hub'},
+  {v:'lab',l:'AI Lab',i:'lab'},
+]; }
+function renderNav(){ const el=$('tabs'); if(!el) return;
+  el.innerHTML=navItems().map(n=>`<div class="tab${state.view===n.v?' on':''}" data-view="${n.v}"><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICN[n.i]}</svg><span>${n.l}</span></div>`).join('');
+  el.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setView(t.dataset.view));
+}
 function setView(v){
   state.view=v;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===v));
@@ -3278,7 +3332,7 @@ function initApp(){
   $('gw-host').oninput=()=>{ state.gwHost=$('gw-host').value.trim()||'YOUR_GATEWAY_IP'; saveCfg(); refreshGateway(); };
 
   // tabs
-  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setView(t.dataset.view));
+  renderNav();
 
   // connect actions
   $('btn-locate').onclick=()=>startVessel();
