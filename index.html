@@ -436,6 +436,19 @@ body.popout #app{display:block}
 .leaflet-bar a{background:#fff;color:var(--ink2);border-color:var(--line2)}
 .leaflet-bar a:hover{background:var(--panel2)}
 .wp-num{background:#0ea5c4;color:#fff;border-radius:50%;width:19px;height:19px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+/* ===== EDITION LAUNCHER ===== */
+#launcher{position:fixed;inset:0;z-index:6500;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0a1622 0%,#0e2230 60%,#0b1a28 100%);padding:22px}
+.lx-card{width:100%;max-width:760px;text-align:center}
+.lx-h{font:800 13px/1 var(--sans);letter-spacing:6px;color:#8fb9c9}
+.lx-sub{font:500 13.5px var(--sans);color:#9fc0cf;margin:9px 0 24px}
+.lx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.lx-opt{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:24px 16px 20px;cursor:pointer;color:#dceaf1;display:flex;flex-direction:column;align-items:center;gap:11px;transition:.18s;font-family:var(--sans)}
+.lx-opt:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.34);transform:translateY(-3px)}
+.lxsvg{width:58px;height:58px;flex:none}
+.lx-opt .lxn{font:800 17px var(--sans);letter-spacing:.4px;color:#fff}
+.lx-opt .lxd{font:500 12px/1.45 var(--sans);color:#9fc0cf;max-width:200px}
+.lx-foot{margin-top:22px;font:500 11px var(--sans);color:#6f93a4;letter-spacing:.4px}
+@media(max-width:640px){.lx-grid{grid-template-columns:1fr}.lx-opt{flex-direction:row;text-align:left;justify-content:flex-start}.lx-opt .lxd{max-width:none}}
 /* ===== AI VISION LAB (tactical) ===== */
 #view-lab{display:none;flex-direction:column;background:#070d12;color:#cfe7ef;height:calc(100vh - 112px);min-height:460px}
 .lab-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;background:#0a141c;border-bottom:1px solid #16323f}
@@ -477,7 +490,7 @@ body.popout #app{display:block}
 <!-- ===== INITIALIZATION / BOOT SCREEN ===== -->
 <div id="boot">
   <div class="boot-card">
-    <svg class="boot-logo" viewBox="0 0 40 40" aria-label="OSS logo">
+    <svg class="boot-logo" id="emblem-boot" viewBox="0 0 40 40" aria-label="edition logo">
       <defs>
         <linearGradient id="ossg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient>
         <clipPath id="ossc2"><rect x="1.5" y="1.5" width="37" height="37" rx="11"/></clipPath>
@@ -490,19 +503,45 @@ body.popout #app{display:block}
         <path d="M16 18 L18 12.8 L22.9 12.8 L24.1 18 Z" fill="#fff"/>
       </g>
     </svg>
-    <div class="boot-name">OSS</div>
-    <div class="boot-sub">OCEAN SURVEILLANCE SERVICES</div>
-    <div class="boot-tag">MARINE INTELLIGENCE</div>
+    <div class="boot-name" id="boot-name">OSS</div>
+    <div class="boot-sub" id="boot-org">OCEAN SURVEILLANCE SERVICES</div>
+    <div class="boot-tag" id="boot-tag">MARINE INTELLIGENCE</div>
     <div class="boot-bar"><i id="boot-fill"></i></div>
     <div class="boot-status" id="boot-status">Initializing…</div>
   </div>
   <div class="boot-foot">v1.0 · Single-Drone Deploy</div>
 </div>
 
+<!-- ===== EDITION LAUNCHER (entrance) ===== -->
+<div id="launcher" style="display:none">
+  <div class="lx-card">
+    <div class="lx-h">SELECT EDITION</div>
+    <div class="lx-sub">One install · three mission-configured consoles</div>
+    <div class="lx-grid">
+      <button class="lx-opt" data-ed="fish">
+        <svg class="lxsvg" id="lx-em-fish" viewBox="0 0 40 40" aria-hidden="true"></svg>
+        <div class="lxn">OSS · Fishing</div>
+        <div class="lxd">Aerial fish-spotting for sport &amp; commercial crews</div>
+      </button>
+      <button class="lx-opt" data-ed="sar">
+        <svg class="lxsvg" id="lx-em-sar" viewBox="0 0 40 40" aria-hidden="true"></svg>
+        <div class="lxn">Search &amp; Rescue</div>
+        <div class="lxd">Find people &amp; objects fast — drift, patterns, thermal</div>
+      </button>
+      <button class="lx-opt" data-ed="cap">
+        <svg class="lxsvg" id="lx-em-cap" viewBox="0 0 40 40" aria-hidden="true"></svg>
+        <div class="lxn">Civil Air Patrol</div>
+        <div class="lxd">Grid search, ELT &amp; disaster-relief sorties</div>
+      </button>
+    </div>
+    <div class="lx-foot">Each edition has its own activation keys · you can switch anytime</div>
+  </div>
+</div>
+
 <!-- ===== LICENSE / ACTIVATION SCREEN ===== -->
 <div id="license" style="display:none">
   <div class="boot-card">
-    <svg class="boot-logo" viewBox="0 0 40 40" aria-hidden="true">
+    <svg class="boot-logo" id="emblem-lic" viewBox="0 0 40 40" aria-hidden="true">
       <defs>
         <linearGradient id="ossg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient>
         <clipPath id="ossc3"><rect x="1.5" y="1.5" width="37" height="37" rx="11"/></clipPath>
@@ -515,8 +554,8 @@ body.popout #app{display:block}
         <path d="M16 18 L18 12.8 L22.9 12.8 L24.1 18 Z" fill="#fff"/>
       </g>
     </svg>
-    <div class="boot-name">OSS</div>
-    <div class="boot-sub">OCEAN SURVEILLANCE SERVICES</div>
+    <div class="boot-name" id="lic-name">OSS</div>
+    <div class="boot-sub" id="lic-org">OCEAN SURVEILLANCE SERVICES</div>
     <div class="lic-prompt">Enter your license key to activate</div>
     <input id="lic-input" placeholder="OSS-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
     <button class="btn cyan" id="lic-go">Activate</button>
@@ -529,7 +568,7 @@ body.popout #app{display:block}
   <!-- ===== TOP BAR ===== -->
   <header id="topbar">
     <div class="brand">
-      <svg class="logo" viewBox="0 0 40 40" aria-label="OSS logo">
+      <svg class="logo" id="emblem-top" viewBox="0 0 40 40" aria-label="edition logo">
         <defs>
           <linearGradient id="ossg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient>
           <clipPath id="ossc1"><rect x="1.5" y="1.5" width="37" height="37" rx="11"/></clipPath>
@@ -542,7 +581,7 @@ body.popout #app{display:block}
           <path d="M16 18 L18 12.8 L22.9 12.8 L24.1 18 Z" fill="#fff"/>
         </g>
       </svg>
-      <div><h1>OSS <span class="lite">CONSOLE</span></h1><div class="sub">MARINE INTELLIGENCE</div></div>
+      <div><h1 id="brand-h1">OSS <span class="lite">CONSOLE</span></h1><div class="sub" id="brand-sub">MARINE INTELLIGENCE</div></div>
     </div>
     <div class="tabs">
       <div class="tab" data-view="connect">① CONNECT</div>
@@ -663,7 +702,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot">OSS Console · v<span id="app-ver">1.8</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">1.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1096,7 +1135,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.8';
+const APP_VERSION='1.9';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1182,27 +1221,84 @@ function dismissBoot(){ const b=$('boot'); if(b && !b.dataset.gone){ b.dataset.g
    stop casual sharing, not a determined attacker. To revoke/expire, move to a
    server-validated key check (Gumroad / Lemon Squeezy) later.
    ============================================================================ */
-const LICENSE_HASHES=["92d9b3be","d01b4d7a","35dfacdf","8a46cdab","61337aef","17fa7f9d","9d899912","32d4d2e0","fe7875f9","c9f1280a","a9516637","2e3537bd","6a814d67","123dd3bf","18b8c3bf","ee5d60c2","ebe888fe","1219678d","46eeb517","4328c63b","ff7aa896","b6953950","1b29aa34","6a6e16b6","2489f51b","2db44c4f","17211e3a","7bfbd29a","9274c50a","d13823af","a235c0f1","91ced6d2","a6223335","c750030e","c0e3e04a","865cba07","79892003","9dce8ac5","dc338299","39686eb9","8739f832","a79845da","1cf4455e","8331b828","a1dc54fc","855b68bd","d14b1ff6","4e6b5347","57a34afe","79d28436","196b236b","bf9ccdb5","6c3619c6","1194305e","def00123","02905c21","8bdb5e3b","52f98620","4407a021","6bf352d8","dbd782c8","c9e6be9f","cf5a066e","c6284aca","ce5c1bd3","1aa4f834","55213783","431a0dea","1dfe9239","e41eba45","034b037c","7fd8026a","ab7ffd03","bb3d224e","1d097689","c558797c","792833f9","86f9ddf4","09aab58f","63c73442","300c7e34","d50bbe2b","719f0789","ac3a8679","3313155b","1b91460f","9dd4244d","51076868","1cef2929","e0bdb120","0234f234","e932d136","4cefb2b5","8dac81ba","38f5d9f0","46454b75","57d03f6c","6386f4a3","527ba271","e874758d"];
 function keyHash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return ('0000000'+h.toString(16)).slice(-8); }
 const normKey=k=>(k||'').trim().toUpperCase();
-function validKey(k){ return LICENSE_HASHES.indexOf(keyHash(normKey(k)))>=0; }
-function licensed(){ try{ return validKey(localStorage.getItem('oss_lic')); }catch(e){ return false; } }
+/* ============================================================================
+   EDITIONS — three mission-configured builds from one codebase, chosen at the
+   entrance launcher. Each has its own branding, target vocabulary + 100 keys.
+   ============================================================================ */
+const SAR_TARGETS=[
+  {n:'Person in Water (PIW)', pri:true}, {n:'Survivor (ashore/ground)', pri:true},
+  {n:'Life Raft', pri:true}, {n:'Life Jacket / PFD'}, {n:'Capsized Vessel', pri:true},
+  {n:'Disabled Vessel'}, {n:'Debris Field'}, {n:'Oil / Fuel Sheen'},
+  {n:'Aircraft Wreckage', pri:true}, {n:'Vehicle'}, {n:'Signal / Flare / Mirror', pri:true},
+  {n:'Ground Team / Hiker', pri:true}, {n:'Track / Sign'}, {n:'Campsite / Shelter'},
+  {n:'Unknown Contact'},
+];
+const __HF=["92d9b3be","54865005","6b83667d","07797057","b9beeb60","2c837fe1","af058ada","bfb2ce17","7727ea8d","54b107b8","89368816","8ee26a4a","c5d44235","308cc78b","46cd9378","006b73d8","dee3e5e6","936a644e","eef0f87f","a420a3db","c5efaf40","6a364b1c","56e603b0","b87085c5","3c28a382","2d80d28c","486e0e36","604f0df6","2b9f19d9","bae2cc44","d5c8f32a","bf7b5872","1fcd27fd","efa6c42c","5a23929d","81002fb7","6859a96e","c61e1a37","29609092","cfdc26a7","626ed7d4","f119ae09","931df56a","fbaf9af9","6928a444","874881df","95f5cb45","0c1ada6b","b14c6d44","114bfa01","4155876e","e483af8c","e1a52a63","0fb44418","90cccd9b","81fbf09e","8fc4a98c","b84e7f4d","ed4627b7","21fac339","7a55be69","af42bd78","2fc53780","9a2e0570","3b4895ba","2a84bd18","eff9e15d","130ed5dc","f8dc4421","6b433101","3a28a8ed","ee28f7ee","2334e8a8","3200420e","c5d9a367","fc084b5a","19debe74","e6742fd1","c2feb8b4","31a2e064","299b8a67","052cf133","d8a8f41b","27e0fa2b","2f83dcfe","4993082a","69827dc2","522dd4a5","576f6086","8caf9106","2d94836e","5b72b8b9","b4ed29e6","d422452c","82147312","50ca3839","2e0f9987","5411c648","0b5ca8c7","00251dbb"];
+const __HS=["25e861a9","d31541c7","3b762415","87e51236","bfb496dc","9337f256","a4fbc382","dfd4db36","44512c0d","48bc33b9","acbeb94d","bd73d410","f52bf64c","cddd879b","adfd0500","5a33052f","33e250b6","006f5806","3f258d2a","a7f682f5","a7b10d13","88f7d1b1","c5b51631","dd216d85","9c4e13fd","cce6775a","cb0d647e","734f113c","684a2862","5f763b64","716f44e4","0cb83e82","08aca4b7","1d6420c8","f6c0e74b","9ca8ef95","71a58152","28654089","e2b6d7b9","c87acf10","1c8425ec","9ce3abda","6ae28836","aedd1382","15be806f","4d920392","38f1ee94","624cf300","771d2c28","02924f10","8a0ae52c","211edf49","86ef9202","52759b85","54629f62","e8f72c2b","264c6f6e","896d50a8","a62d2014","5d3d682c","10efd34d","d078bb53","b05e64e0","a7a725cb","b95e84a4","b1fe1937","51f36c44","95ae1026","cbb46d5d","682c4df9","afc214a0","18f75132","9baf2e38","5362669d","5b4c5ca7","1e942fab","a506273c","223e8a66","61e10998","5d86a3d9","9eca9194","08b0b67a","70f9ec8e","6428d2eb","fa9b58fb","f6f24e6d","5de7323e","a68685d4","58952c29","8b6a915f","36f597a0","0c3e501e","8f487ecc","0305e7cd","ad37de25","a32106c6","564a37fd","a57b0ee9","b8f3f220","1d5df1de"];
+const __HC=["34db81aa","272b6fac","70b9f565","e71ec342","2de14ec8","b71d11c1","07920084","e5953165","3376ddba","55422ddb","d40ee3b9","0e3f6083","800089a6","59bb2b9e","76244847","5de32e7a","26db28cf","6f2d7e3b","10d6d403","5b968252","2bff7b21","b4a76ce7","afca3016","44094df0","4a698967","3e248cdc","fbd127b8","7b2dd3c4","9f515cbc","837ec16b","d20d5017","c36c43a7","fbb253e6","172a9b7f","cb17d6f8","6b9d4585","5cfbacb4","3a73da0e","01de0d06","c84e6acd","a3052929","588f54f1","e25f24a7","9f6a3aea","9fd35589","e451a250","8ae2cec7","723f4eee","64fd1e35","f1ef01cc","9b319f0c","39d4d5f8","158b6d9d","da9cace9","0948d30c","330721f9","26b0b377","6d705323","f9aba644","d66d6f42","f935bebd","c31344c1","41e5543b","e004b6b9","9ccc75d9","4474cc09","c60bed1f","85075795","c580f45c","f734e923","58569aac","636d2753","6a836e10","25f8a0d1","ebb73ec8","20719125","228c608c","a7fd01cb","49f6e0fa","c8da3a4d","ff3a0b73","b7db37e0","95919b46","e7ca65e8","19d55801","1be8ccf9","26ec98c5","52da332f","c96ec971","b547fa46","7f2a4646","564c72b9","27aacf70","292c2e8a","98c06e28","9a1fa040","4a70bc69","26b4230b","9c608465","34b6f2a7"];
+const PROFILES={
+  fish:{ id:'fish', name:'OSS', word:'CONSOLE', sub:'MARINE INTELLIGENCE', org:'OCEAN SURVEILLANCE SERVICES', tag:'AERIAL FISH INTELLIGENCE', noun:'fish',
+         accent:'#0e7490', accent2:'#0891b2', accentlt:'#e2f3f8', prefix:'OSS', emblem:'boat', targets:FISH, hashes:__HF,
+         blurb:'Aerial fish-spotting for sport &amp; commercial crews' },
+  sar:{ id:'sar', name:'SAR', word:'CONSOLE', sub:'SEARCH &amp; RESCUE', org:'AERIAL SEARCH &amp; RESCUE', tag:'MARITIME &amp; GROUND SAR', noun:'target',
+        accent:'#c01f2f', accent2:'#e23b4a', accentlt:'#fdeaec', prefix:'SAR', emblem:'sar', targets:SAR_TARGETS, hashes:__HS,
+        blurb:'Find people &amp; objects fast — drift, patterns, thermal' },
+  cap:{ id:'cap', name:'CAP', word:'CONSOLE', sub:'U.S. AIR FORCE AUXILIARY', org:'CIVIL AIR PATROL', tag:'EMERGENCY SERVICES', noun:'target',
+        accent:'#0a2a6b', accent2:'#16357f', accentlt:'#e6ecf7', prefix:'CAP', emblem:'cap', targets:SAR_TARGETS, hashes:__HC,
+        blurb:'Grid search, ELT &amp; disaster-relief sorties' },
+};
+let EDITION=null, TARGETS=FISH;
+function curProfile(){ return PROFILES[EDITION]||PROFILES.fish; }
+function curHashes(){ return curProfile().hashes; }
+function licKey(){ return 'oss_lic_'+(EDITION||'fish'); }
+function missionNoun(){ return curProfile().noun; }
+function validKey(k){ return curHashes().indexOf(keyHash(normKey(k)))>=0; }
+function licensed(){ try{ return validKey(localStorage.getItem(licKey())) || (EDITION==='fish'&&validKey(localStorage.getItem('oss_lic'))); }catch(e){ return false; } }
+function emblemMarkup(type,sfx){
+  if(type==='sar') return `<defs><linearGradient id="g${sfx}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ef4757"/><stop offset="1" stop-color="#b3121f"/></linearGradient></defs><rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#g${sfx})"/><circle cx="20" cy="20" r="11.4" fill="none" stroke="#fff" stroke-width="3.3"/><circle cx="20" cy="20" r="4.4" fill="#fff"/><g stroke="#fff" stroke-width="3.3" stroke-linecap="round"><line x1="20" y1="5.4" x2="20" y2="11.2"/><line x1="20" y1="28.8" x2="20" y2="34.6"/><line x1="5.4" y1="20" x2="11.2" y2="20"/><line x1="28.8" y1="20" x2="34.6" y2="20"/></g>`;
+  if(type==='cap') return `<defs><linearGradient id="g${sfx}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a3d96"/><stop offset="1" stop-color="#0a2360"/></linearGradient></defs><rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#g${sfx})"/><path d="M20 7.5 L31.5 30.5 L20 25 L8.5 30.5 Z" fill="#fff"/><circle cx="20" cy="19.4" r="3" fill="#c01f2f"/>`;
+  return `<defs><linearGradient id="g${sfx}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient><clipPath id="c${sfx}"><rect x="1.5" y="1.5" width="37" height="37" rx="11"/></clipPath></defs><rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#g${sfx})"/><g clip-path="url(#c${sfx})"><path d="M6 24.6 q4.6 2.4 9.2 0.8 t9.2 -0.2 t8.6 -1.6" fill="none" stroke="#eafdff" stroke-width="1.9" stroke-linecap="round" opacity=".95"/><path d="M6 29 q4.6 2.2 9.2 0.6 t9.2 -0.2 t8.6 -1.4" fill="none" stroke="#bdeefb" stroke-width="1.6" stroke-linecap="round" opacity=".66"/><path d="M9 18.3 L32.8 15.4 Q33.9 17.9 31.1 21.2 Q29.5 22.9 26.3 22.9 L13.4 22.9 Q9.9 22.9 9 18.3 Z" fill="#fff"/><path d="M16 18 L18 12.8 L22.9 12.8 L24.1 18 Z" fill="#fff"/></g>`;
+}
+function applyProfile(ed){
+  const p=PROFILES[ed]||PROFILES.fish; EDITION=p.id; TARGETS=p.targets;
+  const rs=document.documentElement.style;
+  rs.setProperty('--brand',p.accent); rs.setProperty('--brand2',p.accent2); rs.setProperty('--brandlt',p.accentlt);
+  try{ document.title=p.name+' Console — '+p.org.replace(/&amp;/g,'&'); }catch(e){}
+  const set=(id,html)=>{ const e=$(id); if(e) e.innerHTML=html; };
+  set('boot-name',p.name); set('boot-org',p.org); set('boot-tag',p.tag);
+  set('lic-name',p.name); set('lic-org',p.org);
+  set('brand-h1',p.name+' <span class="lite">'+p.word+'</span>'); set('brand-sub',p.sub);
+  set('foot-name',p.name+' Console');
+  const li=$('lic-input'); if(li) li.placeholder=p.prefix+'-XXXX-XXXX';
+  const mp=document.querySelector('meta[name=theme-color]'); if(mp) mp.setAttribute('content',p.accent);
+  ['emblem-boot:EB','emblem-lic:EL','emblem-top:ET'].forEach(s=>{ const [id,sfx]=s.split(':'); const el=$(id); if(el) el.innerHTML=emblemMarkup(p.emblem,sfx); });
+}
+function currentEd(){ try{ return new URLSearchParams(location.search).get('ed') || localStorage.getItem('oss_edition'); }catch(e){ return null; } }
+function chooseEdition(ed){ try{ localStorage.setItem('oss_edition',ed); }catch(e){} applyProfile(ed); const l=$('launcher'); if(l) l.style.display='none'; gateLicense(); }
+function switchEdition(){ try{ localStorage.removeItem('oss_edition'); }catch(e){} location.href=location.pathname; }
+function showLauncher(){ const l=$('launcher'); if(!l){ chooseEdition('fish'); return; }
+  const fill=(id,t,sfx)=>{ const e=$(id); if(e) e.innerHTML=emblemMarkup(t,sfx); };
+  fill('lx-em-fish','boat','LF'); fill('lx-em-sar','sar','LS'); fill('lx-em-cap','cap','LC');
+  l.style.display='flex'; l.querySelectorAll('[data-ed]').forEach(c=>c.onclick=()=>chooseEdition(c.dataset.ed)); }
+function bootApp(){ const ed=currentEd(); if(ed && PROFILES[ed]){ applyProfile(ed); gateLicense(); } else showLauncher(); }
 function startApp(){ setTimeout(dismissBoot,2600); try{ initApp(); }catch(e){ console.error('OSS init error:',e); dismissBoot(); } }
 function showLicense(){
   const el=$('license'); if(!el){ startApp(); return; }   // fail-open if markup missing
   el.style.display='flex';
-  const go=()=>{ const v=$('lic-input').value; if(validKey(v)){ try{localStorage.setItem('oss_lic',normKey(v));}catch(e){} el.style.display='none'; startApp(); }
+  const go=()=>{ const v=$('lic-input').value; if(validKey(v)){ try{localStorage.setItem(licKey(),normKey(v));}catch(e){} el.style.display='none'; startApp(); }
     else { $('lic-err').textContent='Invalid key. Use the key issued with your purchase.'; $('lic-input').select(); } };
   $('lic-go').onclick=go;
   $('lic-input').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
   setTimeout(()=>{ try{$('lic-input').focus();}catch(e){} },120);
 }
 function gateLicense(){
-  try{ const uk=new URLSearchParams(location.search).get('key'); if(uk && validKey(uk)) localStorage.setItem('oss_lic',normKey(uk)); }catch(e){}
+  try{ const uk=new URLSearchParams(location.search).get('key'); if(uk && validKey(uk)) localStorage.setItem(licKey(),normKey(uk)); }catch(e){}
   if(licensed()) startApp(); else showLicense();
 }
-if(isPopout()){ runPopout(); }
-else { gateLicense(); }
+if(isPopout()){ applyProfile(currentEd()||'fish'); runPopout(); }
+else { bootApp(); }
 
 function toggleFullscreen(){
   try{
@@ -1835,7 +1931,7 @@ function isGame(species){ const f=FISH.find(x=>x.n===species); return f?!!f.game
 // open the marking modal at a map point
 function openMark(lat,lng){
   state.pendingMark={lat,lng};
-  const sel=$('mk-species'); if(sel && !sel.options.length) sel.innerHTML=FISH.map(f=>`<option>${f.n}</option>`).join('');
+  const sel=$('mk-species'); if(sel && !sel.options.length) sel.innerHTML=TARGETS.map(f=>`<option>${f.n}</option>`).join('');
   $('mk-count').value=20; $('mk-conf').value=85; $('mk-note').value='';
   $('mk-where').textContent=lat.toFixed(4)+', '+lng.toFixed(4);
   $('mark-modal').classList.remove('hidden');
@@ -1915,7 +2011,7 @@ function renderLogbook(){
   const total=state.detections.length, games=state.detections.filter(d=>d.game).length, species=new Set(state.detections.map(d=>d.species)).size;
   if($('log-stat')) $('log-stat').innerHTML=`<b>${total}</b> total spots · <b>${games}</b> game-fish · <b>${species}</b> species`;
   const sel=$('log-filter');
-  if(sel && sel.dataset.built!=='1'){ sel.innerHTML='<option value="all">All species</option><option value="game">Game fish only</option><option value="bait">Baitfish only</option>'+FISH.map(f=>`<option value="${f.n}">${f.n}</option>`).join(''); sel.dataset.built='1'; sel.value=state.logFilter; }
+  if(sel && sel.dataset.built!=='1'){ sel.innerHTML='<option value="all">All</option>'+(EDITION==='fish'?'<option value="game">Game fish only</option><option value="bait">Baitfish only</option>':'')+TARGETS.map(f=>`<option value="${f.n}">${f.n}</option>`).join(''); sel.dataset.built='1'; sel.value=state.logFilter; }
   const rows=logFiltered().slice().reverse();
   wrap.innerHTML = rows.length ? `<table class="lbt"><thead><tr><th>When</th><th>Species</th><th>Count</th><th>Conf</th><th>Location</th><th></th></tr></thead><tbody>`+
     rows.map(d=>`<tr data-id="${d.id}"><td>${new Date(d.t).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${d.species}${d.game?' 🎯':''}</td><td>${d.count}</td><td>${Math.round(d.conf||0)}%</td><td>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</td><td style="text-align:right"><button class="det-x" data-del="${d.id}" title="Delete">✕</button></td></tr>`).join('')+
@@ -2133,7 +2229,7 @@ let _anno=null;
 function openAnno(id){
   const s=_dsCache.find(x=>x.id===id); if(!s) return;
   _anno={ s, boxes:(s.boxes||[]).map(b=>Object.assign({},b)) };
-  const sel=$('an-species'); if(sel && !sel.options.length) sel.innerHTML=FISH.map(f=>`<option>${f.n}</option>`).join('');
+  const sel=$('an-species'); if(sel && !sel.options.length) sel.innerHTML=TARGETS.map(f=>`<option>${f.n}</option>`).join('');
   if(s.species&&s.species!=='Unlabeled'&&sel) sel.value=s.species;
   $('an-img').src=s.img;
   $('an-meta').textContent=`${s.lat?s.lat.toFixed(4)+', '+s.lng.toFixed(4):'no GPS'} · ${new Date(s.t).toLocaleString()}`;
@@ -2709,7 +2805,7 @@ function labCorrect(){
             species: boxes.length?boxes[0].species:'Unlabeled', alt:state._teleAlt||null, heading:state._teleHdg||null, note:'AI Lab · '+(lab.srcKind||'video') };
   dbPut(s).then(()=>{ state._dsDirty=true; labUpdateCount(); openAnno(s.id); }).catch(()=>toast('Dataset storage unavailable here'));
 }
-function labEnter(){ const sel=$('lab-species'); if(sel&&!sel.options.length) sel.innerHTML=FISH.map(f=>`<option>${f.n}</option>`).join('');
+function labEnter(){ const sel=$('lab-species'); if(sel&&!sel.options.length) sel.innerHTML=TARGETS.map(f=>`<option>${f.n}</option>`).join('');
   if(sel) lab._spShort=labShort(sel.value);
   const v=labVid(); labShowEmpty(!(v.getAttribute('src')||v.srcObject)); labUpdateCount(); }
 function labLeave(){ if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); }
