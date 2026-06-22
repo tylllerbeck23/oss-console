@@ -450,8 +450,17 @@ body.popout #app{display:block}
 .lab-read{font:600 11px/1.4 'SF Mono','JetBrains Mono',monospace;color:#7fb4c6;letter-spacing:.04em;display:flex;gap:13px;flex-wrap:wrap;align-items:center}
 .lab-read b{color:#9fe64a}
 .lab-read .lock{color:#ff5252}
-.lab-ds{font:600 11px/1 'SF Mono','JetBrains Mono',monospace;letter-spacing:.04em;color:#7fb4c6;background:#0c1c26;border:1px solid #1d4b5e;border-radius:7px;padding:7px 10px;white-space:nowrap}
+.lab-ds{font:600 11px/1 'SF Mono','JetBrains Mono',monospace;letter-spacing:.04em;color:#7fb4c6;background:#0c1c26;border:1px solid #1d4b5e;border-radius:7px;padding:7px 10px;white-space:nowrap;cursor:pointer}
+.lab-ds:hover{border-color:#2c7e96}
 .lab-ds b{color:#9fe64a}
+.lab-bd{position:absolute;top:12px;right:12px;width:240px;max-height:64%;overflow:auto;background:rgba(9,18,26,.94);border:1px solid #1d4b5e;border-radius:10px;padding:11px 13px;z-index:6;box-shadow:0 8px 26px rgba(0,0,0,.45)}
+.lab-bd-h{font:700 10px/1.3 'SF Mono','JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#7fb4c6;margin-bottom:9px}
+.lab-bd-empty{font:500 12px/1.45 system-ui;color:#6f97a8}
+.lab-bd-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.lab-bd-n{flex:0 0 82px;font:600 11px system-ui;color:#cfe7ef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab-bd-bar{flex:1;height:7px;background:#0c2330;border-radius:4px;overflow:hidden}
+.lab-bd-bar i{display:block;height:100%;border-radius:4px}
+.lab-bd-c{flex:0 0 28px;text-align:right;font:700 11px 'SF Mono','JetBrains Mono',monospace;color:#9fe64a}
 </style>
 </head>
 <body>
@@ -645,7 +654,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot">OSS Console · v<span id="app-ver">1.6</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot">OSS Console · v<span id="app-ver">1.7</span> · Ocean Surveillance Services — Marine Intelligence<br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -938,6 +947,7 @@ body.popout #app{display:block}
     <div class="lab-stage" id="lab-stage">
       <video id="lab-vid" playsinline muted></video>
       <canvas id="lab-hud"></canvas>
+      <div class="lab-bd" id="lab-breakdown" style="display:none"></div>
       <div class="lab-empty" id="lab-empty">
         <h3>◎ AI Vision Lab</h3>
         <div style="max-width:470px">Load footage and watch the AI mark fish in real time with tactical target outlines. Pause anytime, fix what it gets wrong with <b>✎ Correct frame</b> — every correction becomes training data.</div>
@@ -1065,7 +1075,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.6';
+const APP_VERSION='1.7';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1108,7 +1118,7 @@ const FISH = [
 // AI Vision Lab state — declared early so bootstrap-time setView()/labLeave() can reference it
 const lab = { on:false, mode:'anomaly', sens:0.6, raf:null, boxes:[], busy:false,
               bg:null, c:null, g:null, last:0, stream:null, srcKind:null, fps:0, _fc:0, _ft:0, _msg:'', _spShort:'',
-              auto:false, autoN:0, lastCap:0 };
+              auto:false, autoN:0, lastCap:0, _spCounts:{}, _bdOpen:false };
 function labShort(n){ n=(n||'').split('(')[0].trim(); return (n.length>16?n.slice(0,16):n).toUpperCase(); }
 
 const cfg = lsGet('oss_cfg','{}') || {};
@@ -2611,12 +2621,25 @@ async function labAutoCapture(){
             species:boxes[0].species, alt:state._teleAlt||null, heading:state._teleHdg||null, note:'AI Lab auto · '+(lab.srcKind||'video') };
   try{ await dbPut(s); state._dsDirty=true; lab.autoN++; const b=$('lab-auto'); if(b&&lab.auto) b.textContent='■ Stop ('+lab.autoN+')'; labUpdateCount(); }catch(e){}
 }
+const LAB_TARGET=200;   // labeled fish/species rule-of-thumb for a first model
 async function labUpdateCount(){
   let s=[]; try{ s=await dbAll(); }catch(e){}
-  let fish=0; const sp=new Set();
-  s.forEach(x=>{ (x.boxes||[]).forEach(b=>{ fish++; if(b.species&&b.species!=='Unlabeled') sp.add(b.species); }); });
-  const el=$('lab-ds'); if(el) el.innerHTML=`DATASET <b>${s.length}</b> frames · <b>${fish}</b> fish · <b>${sp.size}</b> sp`;
+  let fish=0; const map={};
+  s.forEach(x=>{ (x.boxes||[]).forEach(b=>{ fish++; const n=b.species; if(n&&n!=='Unlabeled') map[n]=(map[n]||0)+1; }); });
+  lab._spCounts=map;
+  const el=$('lab-ds'); if(el) el.innerHTML=`DATASET <b>${s.length}</b> frames · <b>${fish}</b> fish · <b>${Object.keys(map).length}</b> sp ▾`;
+  if(lab._bdOpen) renderBreakdown();
 }
+function renderBreakdown(){
+  const el=$('lab-breakdown'); if(!el) return;
+  const ents=Object.entries(lab._spCounts||{}).sort((a,b)=>b[1]-a[1]);
+  if(!ents.length){ el.innerHTML='<div class="lab-bd-h">Per-species labels</div><div class="lab-bd-empty">No labeled fish yet — label contacts with ✎ Correct frame, or run ⚡ Auto-collect.</div>'; return; }
+  el.innerHTML='<div class="lab-bd-h">Per-species · target ~'+LAB_TARGET+'</div>'+ents.map(([n,c])=>{
+    const pct=Math.min(100,Math.round(c/LAB_TARGET*100)), ok=c>=150;
+    return `<div class="lab-bd-row"><span class="lab-bd-n" title="${n} — ${c}">${n}</span><span class="lab-bd-bar"><i style="width:${pct}%;background:${ok?'#9fe64a':'#22b8d8'}"></i></span><span class="lab-bd-c" style="color:${ok?'#9fe64a':'#7fb4c6'}">${c}</span></div>`;
+  }).join('');
+}
+function labToggleBreakdown(){ lab._bdOpen=!lab._bdOpen; const el=$('lab-breakdown'); if(el) el.style.display=lab._bdOpen?'block':'none'; if(lab._bdOpen) renderBreakdown(); }
 function drawLabHud(boxes, now){
   const v=labVid(), h=$('lab-hud'), stg=$('lab-stage'); if(!v||!h||!stg) return;
   now=now||performance.now();
@@ -2677,6 +2700,7 @@ function initLab(){
   $('lab-sens').oninput=()=>{ lab.sens=+$('lab-sens').value; };
   $('lab-species').onchange=()=>{ lab._spShort=labShort($('lab-species').value); };
   $('lab-correct').onclick=labCorrect;
+  $('lab-ds').onclick=labToggleBreakdown;
   $('lab-full').onclick=()=>toggleFullscreen();
   const v=labVid();
   $('lab-play').onclick=()=>{ if(v.paused)v.play(); else v.pause(); };
