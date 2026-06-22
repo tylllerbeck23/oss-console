@@ -449,6 +449,15 @@ body.popout #app{display:block}
 .lx-opt .lxd{font:500 12px/1.45 var(--sans);color:#9fc0cf;max-width:200px}
 .lx-foot{margin-top:22px;font:500 11px var(--sans);color:#6f93a4;letter-spacing:.4px}
 @media(max-width:640px){.lx-grid{grid-template-columns:1fr}.lx-opt{flex-direction:row;text-align:left;justify-content:flex-start}.lx-opt .lxd{max-width:none}}
+/* ===== SAR datum tool ===== */
+.drow{display:flex;gap:8px;margin-top:7px}
+.fld2{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.lab2{font-size:10px;color:var(--dim);font-weight:600;letter-spacing:.3px}
+.numin2{width:100%;padding:5px 7px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--brand);border:1px solid var(--line2);border-radius:6px;background:#fff}
+#d-obj{padding:5px 6px;border:1px solid var(--line2);border-radius:6px;font-size:12px;background:#fff;color:var(--ink)}
+#d-lkp{width:100%;padding:6px 8px;font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink)}
+.lkp-pin{background:#f59e0b;color:#3a2400;font:700 9px/1 var(--mono);padding:4px 5px;border-radius:5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);text-align:center}
+.datum-pin{background:#dc2626;color:#fff;font:700 9px/1 var(--mono);padding:4px 6px;border-radius:5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);white-space:nowrap;text-align:center}
 /* ===== AI VISION LAB (tactical) ===== */
 #view-lab{display:none;flex-direction:column;background:#070d12;color:#cfe7ef;height:calc(100vh - 112px);min-height:460px}
 .lab-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;background:#0a141c;border-bottom:1px solid #16323f}
@@ -702,7 +711,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">1.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.0</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -788,6 +797,28 @@ body.popout #app{display:block}
       <!-- side panel: PLAN -->
       <div id="side-plan" style="display:none">
         <div class="side-hd"><span class="dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></span> AUTOMATED SEARCH MISSION</div>
+        <div class="sec" id="sec-datum" style="display:none">
+          <h4>0 · Datum &amp; Drift</h4>
+          <div class="note" style="margin-top:0">Project a Last Known Position forward by current + wind to the search <b>datum</b>.</div>
+          <div class="row" style="margin-top:8px"><button class="btn sm danger" id="d-setmap">✎ Set LKP on map</button></div>
+          <label class="fld" style="margin-top:7px"><span class="lab">LKP (lat, lng)</span><input id="d-lkp" placeholder="27.50, -83.00" autocomplete="off"></label>
+          <div class="drow">
+            <label class="fld2"><span class="lab2">Hrs since seen</span><input class="numin2" id="d-hrs" type="number" min="0" step="0.25" value="1"></label>
+            <label class="fld2"><span class="lab2">Object</span><select id="d-obj"><option value="piw">Person in water</option><option value="raft">Life raft</option><option value="boat">Small boat</option><option value="debris">Debris</option></select></label>
+          </div>
+          <div class="drow">
+            <label class="fld2"><span class="lab2">Current toward °</span><input class="numin2" id="d-curset" type="number" min="0" max="359" value="0"></label>
+            <label class="fld2"><span class="lab2">Current (kt)</span><input class="numin2" id="d-curdr" type="number" min="0" step="0.1" value="0.5"></label>
+          </div>
+          <div class="drow">
+            <label class="fld2"><span class="lab2">Wind from °</span><input class="numin2" id="d-windir" type="number" min="0" max="359" value="0"></label>
+            <label class="fld2"><span class="lab2">Wind (kt)</span><input class="numin2" id="d-windsp" type="number" min="0" step="1" value="10"></label>
+          </div>
+          <label class="fld" style="margin-top:6px"><span class="lab">Initial position error <input class="numin" id="d-err" type="number" min="0.1" step="0.1" value="0.5"> NM</span></label>
+          <button class="btn full" id="d-compute" style="margin-top:9px;background:var(--brand);color:#fff;border:none">◎ Compute Datum</button>
+          <div class="note" id="d-out" style="margin-top:8px">Set LKP, time &amp; environment, then Compute.</div>
+          <button class="btn sm full" id="d-center" style="margin-top:7px">Center search on datum →</button>
+        </div>
         <div class="sec">
           <h4>1 · Search Pattern</h4>
           <div class="seg" id="pat-seg">
@@ -1135,7 +1166,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='1.9';
+const APP_VERSION='2.0';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1357,6 +1388,7 @@ function ensureMap(){
   state.layers.me   = L.layerGroup().addTo(m);
   state.layers.drone= L.layerGroup().addTo(m);
   state.layers.sim  = L.layerGroup().addTo(m);
+  state.layers.datum= L.layerGroup().addTo(m);
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
   m.on('click', onMapClick);
   m.on('moveend zoomend', updateMapBadge);
@@ -1401,6 +1433,7 @@ function setHomeMarker(ll){
 function onMapClick(e){
   const lat=e.latlng.lat, lng=e.latlng.lng;
   if(state.setVesselMode){ setVessel({lat,lng}); state.setVesselMode=false; endMapMode(); return; }
+  if(state.setLkpMode){ state.lkp={lat,lng}; const i=$('d-lkp'); if(i) i.value=lat.toFixed(4)+', '+lng.toFixed(4); state.setLkpMode=false; endMapMode(); drawDatum(); toast('LKP set — Compute Datum'); return; }
   if(state.drawing){ state.area.push({lat,lng}); drawArea(); return; }
   if(state.markMode){ openMark(lat,lng); state.markMode=false; endMapMode(); return; }
 }
@@ -1605,6 +1638,65 @@ function vesselBox(c, radKm){
   return [{lat:c.lat+dLat,lng:c.lng-dLng},{lat:c.lat+dLat,lng:c.lng+dLng},{lat:c.lat-dLat,lng:c.lng+dLng},{lat:c.lat-dLat,lng:c.lng-dLng}];
 }
 function vesselPoint(){ return state.home || state.vesselPos || (state.map?{lat:state.map.getCenter().lat,lng:state.map.getCenter().lng}:null); }
+function searchCenter(){ return state.searchCenter || vesselPoint(); }
+
+/* ============================================================================
+   SAR DRIFT & DATUM — project a Last Known Position forward by water current +
+   wind leeway to a search datum, with a probable-area radius (simplified
+   IAMSAR model). Drives the search pattern center.
+   ============================================================================ */
+const NM_M=1852;                                  // metres per nautical mile
+const LEEWAY={piw:0.020, raft:0.045, boat:0.052, debris:0.030};  // leeway speed as fraction of wind speed
+function destPoint(lat,lng,brgDeg,distM){
+  const R=6371000, d=distM/R, b=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180;
+  const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));
+  const lo2=lo+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la), Math.cos(d)-Math.sin(la)*Math.sin(la2));
+  return {lat:la2*180/Math.PI, lng:((lo2*180/Math.PI+540)%360)-180};
+}
+function armSetLkp(){ state.setLkpMode=true; const h=$('cross-hint'); if(h){ h.textContent='Tap the map to set the Last Known Position'; h.style.display='block'; } if(state.map) state.map.getContainer().style.cursor='crosshair'; }
+function computeDatum(){
+  if(!state.lkp){ const c=parseCoords($('d-lkp')&&$('d-lkp').value); if(c) state.lkp=c; }
+  if(!state.lkp){ toast('Set the Last Known Position first (tap map or type coords)'); return; }
+  const H=Math.max(0,+($('d-hrs').value)||0);
+  const curToward=(+($('d-curset').value)||0), curKt=(+($('d-curdr').value)||0);
+  const windFrom=(+($('d-windir').value)||0), windKt=(+($('d-windsp').value)||0);
+  const lf=LEEWAY[$('d-obj').value]!=null?LEEWAY[$('d-obj').value]:0.03;
+  const leewayToward=(windFrom+180)%360, leewayKt=lf*windKt;
+  const toXY=(brg,mag)=>({x:mag*Math.sin(brg*Math.PI/180), y:mag*Math.cos(brg*Math.PI/180)});
+  const cv=toXY(curToward,curKt), lv=toXY(leewayToward,leewayKt);
+  const vx=cv.x+lv.x, vy=cv.y+lv.y;
+  const driftKt=Math.hypot(vx,vy);
+  let driftBrg=Math.atan2(vx,vy)*180/Math.PI; if(driftBrg<0) driftBrg+=360;
+  const driftNm=driftKt*H;
+  const d=destPoint(state.lkp.lat,state.lkp.lng,driftBrg,driftNm*NM_M);
+  const E0=(+($('d-err').value)||0.5);
+  const radNm=Math.max(0.3,(E0+0.33*driftNm)*1.1);
+  state.datum={lat:d.lat,lng:d.lng,brg:driftBrg,distNm:driftNm,radNm,H,driftKt,leewayKt};
+  drawDatum();
+  $('d-out').innerHTML=`Drift <b>${Math.round(driftBrg)}°T · ${driftNm.toFixed(2)} NM</b> in ${H} h (${driftKt.toFixed(2)} kt · leeway ${leewayKt.toFixed(2)} kt)<br>Datum <b>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</b><br>Search radius <b>${radNm.toFixed(2)} NM</b> (${(radNm*1.15078).toFixed(2)} mi)`;
+}
+function drawDatum(){
+  const g=state.layers&&state.layers.datum; if(!g) return; g.clearLayers();
+  const lkp=state.lkp; if(!lkp) return;
+  L.marker([lkp.lat,lkp.lng],{icon:L.divIcon({className:'',html:'<div class="lkp-pin">LKP</div>',iconSize:[30,17],iconAnchor:[15,8]})}).addTo(g).bindPopup('Last Known Position');
+  const dt=state.datum;
+  if(dt){
+    L.polyline([[lkp.lat,lkp.lng],[dt.lat,dt.lng]],{color:'#f59e0b',weight:2.5,dashArray:'6,4'}).addTo(g);
+    L.circle([dt.lat,dt.lng],{radius:dt.radNm*NM_M,color:'#dc2626',weight:2,fillColor:'#dc2626',fillOpacity:.08}).addTo(g);
+    L.marker([dt.lat,dt.lng],{icon:L.divIcon({className:'',html:'<div class="datum-pin">⊕ DATUM</div>',iconSize:[58,17],iconAnchor:[29,8]})}).addTo(g).bindPopup('Search datum');
+    if(state.map){ try{ state.map.fitBounds(L.latLngBounds([[lkp.lat,lkp.lng],[dt.lat,dt.lng]]).pad(0.7)); }catch(e){} }
+  }
+}
+function centerSearchOnDatum(){
+  if(!state.datum){ toast('Compute the datum first'); return; }
+  state.searchCenter={lat:state.datum.lat,lng:state.datum.lng};
+  const mi=Math.max(0.2,Math.min(9,+(state.datum.radNm*1.15078).toFixed(1)));
+  const r=$('r-rad'); if(r){ r.value=mi; if(r.oninput) r.oninput(); }
+  state.pattern='expsquare'; document.querySelectorAll('#pat-seg .opt').forEach(o=>o.classList.toggle('on',o.dataset.pat==='expsquare'));
+  if(typeof updatePatternUI==='function') updatePatternUI();
+  generatePath();
+  toast('Search centered on datum · expanding square');
+}
 function generatePath(){
   cancelSim();
   let wp=[], usedArea=null;
@@ -1613,15 +1705,15 @@ function generatePath(){
     usedArea=state.area;
     wp=genLawnmower(state.area, state.spacing, state.heading, state.area[0].lat, state.area[0].lng);
   } else if(state.pattern==='vesselgrid'){
-    const c=vesselPoint(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
+    const c=searchCenter(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
     usedArea=vesselBox(c, state.searchRadius);
     state.area=usedArea; drawArea();
     wp=genLawnmower(usedArea, state.spacing, state.heading, usedArea[0].lat, usedArea[0].lng);
   } else if(state.pattern==='spiral'){
-    const c=vesselPoint(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
+    const c=searchCenter(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
     wp=genSpiral(c.lat,c.lng,state.spacing, state.searchRadius*1000);
   } else { // expsquare
-    const c=vesselPoint(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
+    const c=searchCenter(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
     const legs=Math.max(8, Math.min(60, Math.round(state.searchRadius*1000/state.spacing)*2));
     wp=genExpandingSquare(c.lat,c.lng,state.spacing,legs);
   }
@@ -2844,6 +2936,7 @@ function setView(v){
   if(v==='operate'||v==='plan'){
     ensureMap();
     state.planMode = v==='plan';
+    { const sd=$('sec-datum'); if(sd) sd.style.display=(v==='plan'&&EDITION!=='fish')?'block':'none'; }
     $('side-operate').style.display = v==='operate'?'block':'none';
     $('side-plan').style.display = v==='plan'?'block':'none';
     setTimeout(()=>state.map&&state.map.invalidateSize(),60);
@@ -3019,6 +3112,11 @@ function initApp(){
   $('pl-undo').onclick=()=>{ state.area.pop(); drawArea(); };
   $('pl-clear').onclick=()=>{ state.area=[]; state.waypoints=[]; drawArea(); if(state.layers.path)state.layers.path.clearLayers(); };
   $('pl-generate').onclick=generatePath;
+  // SAR datum & drift
+  $('d-setmap').onclick=armSetLkp;
+  $('d-compute').onclick=computeDatum;
+  $('d-center').onclick=centerSearchOnDatum;
+  $('d-lkp').onchange=()=>{ const c=parseCoords($('d-lkp').value); if(c){ state.lkp=c; drawDatum(); } };
   $('pl-save').onclick=saveMission; renderMissions();
   $('ex-kmz').onclick=exportKmz; $('ex-kml').onclick=exportKml; $('ex-csv').onclick=exportCsv; $('ex-geo').onclick=exportGeo;
 
