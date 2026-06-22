@@ -2528,7 +2528,8 @@ function labSetSource(kind){
   if(kind==='file'){ $('lab-fileinput').click(); return; }
   if(kind==='screen'){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){ toast('Screen capture not supported in this browser'); return; }
-    navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false}).then(s=>{
+    navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false,
+        selfBrowserSurface:'exclude', surfaceSwitching:'include', monitorTypeSurfaces:'include'}).then(s=>{
       labStopStream(); v.removeAttribute('src'); v.srcObject=s; lab.stream=s; lab.srcKind='screen';
       const tr=s.getVideoTracks()[0]; if(tr) tr.onended=()=>{ labReadout('Screen capture ended.'); };
       v.muted=true; v.play().catch(()=>{}); labShowEmpty(false); labFootMode(false); labReadout('Screen/tab capture live — Start AI.');
