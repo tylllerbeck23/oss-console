@@ -458,6 +458,14 @@ body.popout #app{display:block}
 #d-lkp{width:100%;padding:6px 8px;font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink)}
 .lkp-pin{background:#f59e0b;color:#3a2400;font:700 9px/1 var(--mono);padding:4px 5px;border-radius:5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);text-align:center}
 .datum-pin{background:#dc2626;color:#fff;font:700 9px/1 var(--mono);padding:4px 6px;border-radius:5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);white-space:nowrap;text-align:center}
+.seg.wrap{flex-wrap:wrap}
+.air-legend{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px}
+.air-legend .ac{font-size:10px;font-weight:600;color:var(--ink2);padding:3px 9px 3px 21px;border-radius:20px;border:1px solid var(--line);position:relative;background:var(--panel)}
+.air-legend .ac::before{content:'';position:absolute;left:8px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:var(--c)}
+.air-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);margin:4px 0}
+.air-row .air-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.air-row .btn{margin-left:auto;padding:1px 7px}
+.air-tag{color:#fff;font:800 10px/1 var(--mono);padding:2px 4px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);text-align:center}
 /* ===== AI VISION LAB (tactical) ===== */
 #view-lab{display:none;flex-direction:column;background:#070d12;color:#cfe7ef;height:calc(100vh - 112px);min-height:460px}
 .lab-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;background:#0a141c;border-bottom:1px solid #16323f}
@@ -711,7 +719,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.0</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.1</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -797,6 +805,10 @@ body.popout #app{display:block}
       <!-- side panel: PLAN -->
       <div id="side-plan" style="display:none">
         <div class="side-hd"><span class="dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></span> AUTOMATED SEARCH MISSION</div>
+        <div class="seg" id="env-seg" style="display:none;margin-bottom:11px">
+          <div class="opt on" data-env="maritime">⚓ Maritime</div>
+          <div class="opt" data-env="inland">⛰ Inland</div>
+        </div>
         <div class="sec" id="sec-datum" style="display:none">
           <h4>0 · Datum &amp; Drift</h4>
           <div class="note" style="margin-top:0">Project a Last Known Position forward by current + wind to the search <b>datum</b>.</div>
@@ -819,12 +831,29 @@ body.popout #app{display:block}
           <div class="note" id="d-out" style="margin-top:8px">Set LKP, time &amp; environment, then Compute.</div>
           <button class="btn sm full" id="d-center" style="margin-top:7px">Center search on datum →</button>
         </div>
+        <div class="sec" id="sec-air">
+          <h4>Airspace &amp; Altitude</h4>
+          <div class="air-legend">
+            <span class="ac" style="--c:#16a34a">G/E uncontrolled</span>
+            <span class="ac" style="--c:#f59e0b">D towered</span>
+            <span class="ac" style="--c:#dc2626">B/C controlled</span>
+          </div>
+          <div class="drow" style="align-items:flex-end">
+            <label class="fld2"><span class="lab2">Add zone</span><select id="air-cls"><option value="G">Class G/E · green</option><option value="D">Class D · orange</option><option value="C">Class C · red</option><option value="B">Class B · red</option></select></label>
+            <button class="btn sm" id="air-add">✎ Place</button>
+          </div>
+          <div class="note" id="air-list" style="margin-top:7px">No airspace marked. Place known towered/controlled zones near your area to deconflict.</div>
+          <label class="fld" style="margin-top:9px"><span class="lab">Min safe altitude (AGL) <input class="numin" id="n-msa" type="number" min="50" max="1000" step="10" value="200"> ft</span></label>
+          <div class="note" id="msa-note">Part 107 ceiling <b>400 ft AGL</b>. Over water, watch for masts &amp; other aircraft.</div>
+        </div>
         <div class="sec">
           <h4>1 · Search Pattern</h4>
-          <div class="seg" id="pat-seg">
+          <div class="seg wrap" id="pat-seg">
             <div class="opt on" data-pat="vesselgrid">Grid</div>
             <div class="opt" data-pat="spiral">Spiral</div>
             <div class="opt" data-pat="expsquare">Square</div>
+            <div class="opt" data-pat="sector" data-sar>Sector</div>
+            <div class="opt" data-pat="creeping" data-sar>Creep&nbsp;Line</div>
             <div class="opt" data-pat="lawnmower">Custom</div>
           </div>
           <label class="fld" id="fld-radius"><span class="lab">Search Radius from Vessel <input class="numin" id="n-rad" type="number" min="0.2" max="9" step="0.1"> mi</span>
@@ -1166,7 +1195,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.0';
+const APP_VERSION='2.1';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1225,6 +1254,8 @@ const state = {
   area: [],                        // polygon vertices [{lat,lng}]
   pattern:'vesselgrid',
   alt:100, spd:8, spacing:144, heading:0, searchRadius:3,
+  airspace:[], env:'maritime', msa:200,   // SAR airspace zones, environment, min safe altitude (ft)
+  lkp:null, datum:null, searchCenter:null, // SAR drift datum
   waypoints:[],                    // generated mission [{lat,lng}]
   detections: lsGet('oss_det','[]') || [],
   notifs:[], notifUnread:0,
@@ -1389,6 +1420,8 @@ function ensureMap(){
   state.layers.drone= L.layerGroup().addTo(m);
   state.layers.sim  = L.layerGroup().addTo(m);
   state.layers.datum= L.layerGroup().addTo(m);
+  state.layers.air  = L.layerGroup().addTo(m);
+  if(state.airspace&&state.airspace.length) drawAirspace();
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
   m.on('click', onMapClick);
   m.on('moveend zoomend', updateMapBadge);
@@ -1434,6 +1467,7 @@ function onMapClick(e){
   const lat=e.latlng.lat, lng=e.latlng.lng;
   if(state.setVesselMode){ setVessel({lat,lng}); state.setVesselMode=false; endMapMode(); return; }
   if(state.setLkpMode){ state.lkp={lat,lng}; const i=$('d-lkp'); if(i) i.value=lat.toFixed(4)+', '+lng.toFixed(4); state.setLkpMode=false; endMapMode(); drawDatum(); toast('LKP set — Compute Datum'); return; }
+  if(state.setAirMode){ addAirspace(lat,lng); state.setAirMode=false; endMapMode(); toast('Airspace zone placed'); return; }
   if(state.drawing){ state.area.push({lat,lng}); drawArea(); return; }
   if(state.markMode){ openMark(lat,lng); state.markMode=false; endMapMode(); return; }
 }
@@ -1629,6 +1663,32 @@ function genSpiral(centerLat, centerLng, spacing, radiusM){
   }
   return wp;
 }
+/* Sector search (IAMSAR VS) — 3 equilateral triangles through the datum, each
+   set rotated 30°, covering the high-probability center area three times. */
+function genSector(lat,lng,radiusM){
+  const wp=[];
+  for(let set=0;set<3;set++){ const base=set*30;
+    for(let i=0;i<3;i++){
+      wp.push({lat,lng});
+      wp.push(destPoint(lat,lng, base+i*120, radiusM));
+      wp.push(destPoint(lat,lng, base+(i+1)*120, radiusM));
+    }
+  }
+  wp.push({lat,lng});
+  return wp;
+}
+/* Rectangle of (along × cross) metres centered on a point, oriented to heading. */
+function orientedRect(lat,lng,alongM,crossM,headingDeg){
+  const p=(headingDeg+90)%360, a=alongM/2, c=crossM/2;
+  const corner=(s1,s2)=>{ const q=destPoint(lat,lng,headingDeg,s1*a); return destPoint(q.lat,q.lng,p,s2*c); };
+  return [corner(1,1),corner(1,-1),corner(-1,-1),corner(-1,1)];
+}
+/* Creeping-line / track-line (CS/TS) — parallel sweeps along a corridor oriented
+   to the track heading (use for a missing aircraft/boat's intended route). */
+function genCreepingLine(lat,lng,spacing,sizeM,headingDeg){
+  const rect=orientedRect(lat,lng,sizeM,sizeM,headingDeg);
+  return genLawnmower(rect, spacing, headingDeg, rect[0].lat, rect[0].lng);
+}
 function pathLengthM(wp){ let d=0; for(let i=1;i<wp.length;i++) d+=haversine(wp[i-1],wp[i]); return d; }
 function haversine(a,b){ const R=6371000,toR=x=>x*Math.PI/180; const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);
   const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
@@ -1687,6 +1747,41 @@ function drawDatum(){
     if(state.map){ try{ state.map.fitBounds(L.latLngBounds([[lkp.lat,lkp.lng],[dt.lat,dt.lng]]).pad(0.7)); }catch(e){} }
   }
 }
+/* ===== AIRSPACE DECONFLICTION + MIN SAFE ALTITUDE + INLAND/MARITIME ===== */
+const AIRSPACE={
+  B:{color:'#dc2626', rNm:5,   name:'Class B', note:'controlled — authorization required'},
+  C:{color:'#dc2626', rNm:5,   name:'Class C', note:'controlled — authorization required'},
+  D:{color:'#f59e0b', rNm:4.3, name:'Class D', note:'towered — LAANC / coordinate'},
+  G:{color:'#16a34a', rNm:3,   name:'Class G/E', note:'uncontrolled — OK ≤400 ft AGL'},
+};
+function armAir(){ state.setAirMode=true; const h=$('cross-hint'); if(h){ h.textContent='Tap the map to place this airspace zone'; h.style.display='block'; } if(state.map) state.map.getContainer().style.cursor='crosshair'; }
+function addAirspace(lat,lng){ state.airspace=state.airspace||[]; state.airspace.push({lat,lng,cls:($('air-cls')&&$('air-cls').value)||'D'}); saveCfg&&saveCfg(); drawAirspace(); renderAirList(); }
+function removeAir(i){ state.airspace.splice(i,1); saveCfg&&saveCfg(); drawAirspace(); renderAirList(); }
+function drawAirspace(){
+  const g=state.layers&&state.layers.air; if(!g) return; g.clearLayers();
+  (state.airspace||[]).forEach(z=>{ const a=AIRSPACE[z.cls]||AIRSPACE.D;
+    L.circle([z.lat,z.lng],{radius:a.rNm*NM_M,color:a.color,weight:2,fillColor:a.color,fillOpacity:.1,dashArray:z.cls==='D'?'':'2,4'}).addTo(g)
+      .bindPopup(`<b>${a.name}</b><br>${a.note}`);
+    L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="air-tag" style="background:${a.color}">${z.cls}</div>`,iconSize:[20,16],iconAnchor:[10,8]})}).addTo(g);
+  });
+}
+function renderAirList(){
+  const el=$('air-list'); if(!el) return;
+  if(!state.airspace||!state.airspace.length){ el.innerHTML='No airspace marked. Place known towered/controlled zones near your area to deconflict.'; return; }
+  el.innerHTML=state.airspace.map((z,i)=>{ const a=AIRSPACE[z.cls]||AIRSPACE.D;
+    return `<div class="air-row"><span class="air-dot" style="background:${a.color}"></span>${a.name} · ${z.lat.toFixed(3)},${z.lng.toFixed(3)} <button class="btn sm danger" data-airdel="${i}">✕</button></div>`; }).join('');
+  el.querySelectorAll('[data-airdel]').forEach(b=>b.onclick=()=>removeAir(+b.dataset.airdel));
+}
+function setEnv(env){
+  state.env=env;
+  document.querySelectorAll('#env-seg .opt').forEach(o=>o.classList.toggle('on',o.dataset.env===env));
+  const sd=$('sec-datum'); if(sd) sd.style.display=(env==='maritime'&&EDITION!=='fish')?'block':'none';
+  const lab=document.querySelector('#fld-radius .lab'); if(lab&&lab.firstChild) lab.firstChild.nodeValue='Search radius from '+(env==='inland'?'Base ':'Vessel ');
+  const mn=$('msa-note'); if(mn) mn.innerHTML=env==='inland'
+    ? 'Inland: keep ≥ <b>MSA above terrain &amp; obstacles</b> (towers, ridgelines). Part 107 ceiling 400 ft AGL — measured above the launch point.'
+    : 'Part 107 ceiling <b>400 ft AGL</b>. Over water, watch for masts &amp; other aircraft.';
+  const msa=$('n-msa'); if(msa && (!msa.dataset.touched)){ msa.value=env==='inland'?300:200; state.msa=+msa.value; }
+}
 function centerSearchOnDatum(){
   if(!state.datum){ toast('Compute the datum first'); return; }
   state.searchCenter={lat:state.datum.lat,lng:state.datum.lng};
@@ -1712,6 +1807,12 @@ function generatePath(){
   } else if(state.pattern==='spiral'){
     const c=searchCenter(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
     wp=genSpiral(c.lat,c.lng,state.spacing, state.searchRadius*1000);
+  } else if(state.pattern==='sector'){
+    const c=searchCenter(); if(!c){ toast('Set the search center (datum or vessel) first'); return; }
+    wp=genSector(c.lat,c.lng,state.searchRadius*1000);
+  } else if(state.pattern==='creeping'){
+    const c=searchCenter(); if(!c){ toast('Set the search center first'); return; }
+    wp=genCreepingLine(c.lat,c.lng,state.spacing,state.searchRadius*2000,state.heading);
   } else { // expsquare
     const c=searchCenter(); if(!c){ toast('Set your vessel location first (CONNECT → Vessel)'); return; }
     const legs=Math.max(8, Math.min(60, Math.round(state.searchRadius*1000/state.spacing)*2));
@@ -1780,6 +1881,9 @@ function updateSummary(){
   if(wp.length>300) msgs.push('Over 300 waypoints — split into multiple missions; many DJI aircraft cap a single waypoint mission.');
   if(landPct<15) msgs.push(`Won’t finish on one ${DRONES[state.model].name.replace('DJI ','')} battery (${endur} min) — shrink the radius/area, widen line spacing, or plan ~${batteries} batteries.`);
   if(state.alt*FT>400) msgs.push(`Altitude ${Math.round(state.alt*FT)} ft AGL is above the 400 ft FAA Part 107 limit. Verify authorization.`);
+  const msa=state.msa||(+($('n-msa')&&$('n-msa').value)||0);
+  if(msa && state.alt*FT < msa) msgs.push(`Altitude ${Math.round(state.alt*FT)} ft is below your min safe altitude (${msa} ft AGL)${state.env==='inland'?' — raise it to clear terrain/obstacles':''}.`);
+  if((state.airspace||[]).length){ const center=searchCenter(); if(center){ const hit=state.airspace.find(z=>{ const a=AIRSPACE[z.cls]||AIRSPACE.D; return haversine(center,z)<=a.rNm*NM_M; }); if(hit){ const a=AIRSPACE[hit.cls]; msgs.push(`Search center is inside ${a.name} airspace — ${a.note}.`); } } }
   if(msgs.length){ warn.style.display='block'; warn.innerHTML='⚠ '+msgs.join('<br>⚠ '); } else warn.style.display='none';
 }
 
@@ -2936,7 +3040,11 @@ function setView(v){
   if(v==='operate'||v==='plan'){
     ensureMap();
     state.planMode = v==='plan';
-    { const sd=$('sec-datum'); if(sd) sd.style.display=(v==='plan'&&EDITION!=='fish')?'block':'none'; }
+    { const sar=EDITION!=='fish';
+      const es=$('env-seg'); if(es) es.style.display=sar?'flex':'none';
+      const sa=$('sec-air'); if(sa) sa.style.display='block';
+      document.querySelectorAll('#pat-seg [data-sar]').forEach(o=>o.style.display=sar?'':'none');
+      if(sar) setEnv(state.env||'maritime'); else { const sd=$('sec-datum'); if(sd) sd.style.display='none'; } }
     $('side-operate').style.display = v==='operate'?'block':'none';
     $('side-plan').style.display = v==='plan'?'block':'none';
     setTimeout(()=>state.map&&state.map.invalidateSize(),60);
@@ -3117,6 +3225,10 @@ function initApp(){
   $('d-compute').onclick=computeDatum;
   $('d-center').onclick=centerSearchOnDatum;
   $('d-lkp').onchange=()=>{ const c=parseCoords($('d-lkp').value); if(c){ state.lkp=c; drawDatum(); } };
+  // airspace + MSA + environment
+  $('air-add').onclick=armAir;
+  $('n-msa').oninput=()=>{ $('n-msa').dataset.touched='1'; state.msa=+$('n-msa').value||0; if(state.waypoints&&state.waypoints.length) updateSummary(); };
+  document.querySelectorAll('#env-seg .opt').forEach(o=>o.onclick=()=>setEnv(o.dataset.env));
   $('pl-save').onclick=saveMission; renderMissions();
   $('ex-kmz').onclick=exportKmz; $('ex-kml').onclick=exportKml; $('ex-csv').onclick=exportCsv; $('ex-geo').onclick=exportGeo;
 
