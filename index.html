@@ -488,6 +488,8 @@ body.popout #app{display:block}
 .grid-lab{font:700 9px/1 var(--mono);color:#0a2c70;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap;transform:translateY(1px)}
 .elt-tag{font:700 9px/1 var(--mono);color:#fff;background:#7c3aed;padding:2px 5px;border-radius:4px;border:1.5px solid #fff;white-space:nowrap}
 .elt-fix{font:800 9px/1 var(--mono);color:#fff;background:#dc2626;padding:3px 6px;border-radius:4px;border:2px solid #fff;white-space:nowrap}
+.elt-chip{display:inline-block;font:700 11px var(--mono);color:#6d28d9;background:#f3eefe;border:1px solid #ddd0fb;border-radius:14px;padding:3px 9px;margin:2px 0}
+.elt-chip b{cursor:pointer;color:#a78bda;margin-left:3px}
 /* ===== Comms center ===== */
 #comms-center{position:fixed;top:58px;right:0;width:362px;max-width:94vw;height:calc(100vh - 58px);height:calc(100dvh - 58px);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 34px rgba(16,42,66,.14);z-index:1500;display:flex;flex-direction:column;transition:transform .25s}
 #comms-center.hidden{transform:translateX(105%)}
@@ -764,7 +766,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.0</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -901,6 +903,18 @@ body.popout #app{display:block}
           <div class="note" id="air-list" style="margin-top:7px">No airspace marked. Place known towered/controlled zones near your area to deconflict.</div>
           <label class="fld" style="margin-top:9px"><span class="lab">Min safe altitude (AGL) <input class="numin" id="n-msa" type="number" min="50" max="1000" step="10" value="200"> ft</span></label>
           <div class="note" id="msa-note">Part 107 ceiling <b>400 ft AGL</b>. Over water, watch for masts &amp; other aircraft.</div>
+        </div>
+        <div class="sec" id="sec-elt" style="display:none">
+          <h4>ELT / Beacon DF</h4>
+          <div class="note" style="margin-top:0">Triangulate a 121.5/406 MHz beacon — add bearings from different positions; the <b>fix</b> is where the lines cross.</div>
+          <div class="drow">
+            <label class="fld2"><span class="lab2">From</span><select id="elt-from"><option value="vessel">My position</option><option value="map">Tap map</option></select></label>
+            <label class="fld2"><span class="lab2">Bearing °T</span><input class="numin2" id="elt-brg" type="number" min="0" max="359" value="0"></label>
+          </div>
+          <button class="btn sm full" id="elt-add" style="margin-top:8px">＋ Add bearing (line of bearing)</button>
+          <div class="note" id="elt-list" style="margin-top:8px">No bearings yet — add 2+ from different positions.</div>
+          <div class="note" id="elt-fix" style="margin-top:6px"></div>
+          <button class="btn sm full" id="elt-clear" style="margin-top:6px">Clear bearings</button>
         </div>
         <div class="sec">
           <h4>1 · Search Pattern</h4>
@@ -1274,7 +1288,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.9';
+const APP_VERSION='3.0';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1580,6 +1594,7 @@ function onMapClick(e){
   if(state.setVesselMode){ setVessel({lat,lng}); state.setVesselMode=false; endMapMode(); return; }
   if(state.setLkpMode){ state.lkp={lat,lng}; const i=$('d-lkp'); if(i) i.value=lat.toFixed(4)+', '+lng.toFixed(4); state.setLkpMode=false; endMapMode(); drawDatum(); toast('LKP set — Compute Datum'); return; }
   if(state.setAirMode){ addAirspace(lat,lng); state.setAirMode=false; endMapMode(); toast('Airspace zone placed'); return; }
+  if(state.setEltMode){ state.elt.push({lat,lng,brg:state.eltPendBrg||0}); state.setEltMode=false; endMapMode(); drawElt(); renderEltList(); toast('Bearing added'); return; }
   if(state.drawing){ state.area.push({lat,lng}); drawArea(); return; }
   if(state.markMode){ openMark(lat,lng); state.markMode=false; endMapMode(); return; }
 }
@@ -1966,6 +1981,52 @@ function centerSearchOnDatum(){
   generatePath();
   toast('Search centered on datum · expanding square');
 }
+
+/* ============================================================================
+   ELT / BEACON DIRECTION-FINDING — triangulate a 121.5/406 MHz distress beacon
+   from lines of bearing taken at different positions (intersection = fix).
+   ============================================================================ */
+function armEltTap(){ state.setEltMode=true; const h=$('cross-hint'); if(h){ h.textContent='Tap your position for this bearing'; h.style.display='block'; } if(state.map) state.map.getContainer().style.cursor='crosshair'; }
+function addElt(){
+  const brg=((+($('elt-brg').value)||0)%360+360)%360;
+  if($('elt-from').value==='map'){ state.eltPendBrg=brg; armEltTap(); return; }
+  const c=searchCenter()||vesselPoint(); if(!c){ toast('Set your vessel/position on CONNECT first'); return; }
+  state.elt.push({lat:c.lat,lng:c.lng,brg}); drawElt(); renderEltList(); toast('Bearing added');
+}
+function eltFix(){
+  const obs=state.elt; if(obs.length<2) return null;
+  const ref=obs[0], mLat=111320, mLon=111320*Math.cos(ref.lat*Math.PI/180);
+  const L=obs.map(o=>({x:(o.lng-ref.lng)*mLon, y:(o.lat-ref.lat)*mLat, dx:Math.sin(o.brg*Math.PI/180), dy:Math.cos(o.brg*Math.PI/180)}));
+  const pts=[];
+  for(let i=0;i<L.length;i++) for(let j=i+1;j<L.length;j++){ const a=L[i],b=L[j];
+    const det=a.dx*(-b.dy)-a.dy*(-b.dx); if(Math.abs(det)<1e-6) continue;
+    const ex=b.x-a.x, ey=b.y-a.y, t1=(ex*(-b.dy)-ey*(-b.dx))/det, t2=(a.dx*ey-a.dy*ex)/det;
+    if(t1<0||t2<0) continue; pts.push({x:a.x+t1*a.dx, y:a.y+t1*a.dy}); }
+  if(!pts.length) return null;
+  const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length, cy=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+  let spread=0; for(const p of pts) spread=Math.max(spread,Math.hypot(p.x-cx,p.y-cy));
+  return {lat:ref.lat+cy/mLat, lng:ref.lng+cx/mLon, n:pts.length, spreadNm:spread/NM_M};
+}
+function drawElt(){
+  const g=state.layers&&state.layers.elt; if(!g||!state.map) return; g.clearLayers();
+  state.elt.forEach(o=>{ const end=destPoint(o.lat,o.lng,o.brg,60*NM_M);
+    L.polyline([[o.lat,o.lng],[end.lat,end.lng]],{color:'#7c3aed',weight:2,opacity:.8,dashArray:'5,5'}).addTo(g);
+    L.marker([o.lat,o.lng],{icon:L.divIcon({className:'',html:`<div class="elt-tag">${Math.round(o.brg)}°</div>`,iconSize:[1,1]})}).addTo(g); });
+  const fix=eltFix();
+  if(fix){
+    if(fix.spreadNm>0.05) L.circle([fix.lat,fix.lng],{radius:Math.max(fix.spreadNm,0.3)*NM_M,color:'#dc2626',weight:1.5,fillColor:'#dc2626',fillOpacity:.1}).addTo(g);
+    L.marker([fix.lat,fix.lng],{icon:L.divIcon({className:'',html:'<div class="elt-fix">⊗ ELT FIX</div>',iconSize:[1,1]})}).addTo(g)
+      .bindPopup('Estimated beacon<br>'+fix.lat.toFixed(4)+', '+fix.lng.toFixed(4)+'<br>MGRS '+toMGRS(fix.lat,fix.lng,true)+'<br>GARS '+toGARS(fix.lat,fix.lng));
+  }
+  return fix;
+}
+function renderEltList(){ const el=$('elt-list'); if(!el) return;
+  el.innerHTML = state.elt.length ? state.elt.map((o,i)=>`<span class="elt-chip">${Math.round(o.brg)}° <b data-eltdel="${i}">✕</b></span>`).join(' ') : 'No bearings yet — add 2+ from different positions.';
+  el.querySelectorAll('[data-eltdel]').forEach(b=>b.onclick=()=>{ state.elt.splice(+b.dataset.eltdel,1); drawElt(); renderEltList(); });
+  const fx=$('elt-fix'), f=eltFix();
+  if(fx) fx.innerHTML = f ? `<b style="color:#dc2626">⊗ FIX</b> ${f.lat.toFixed(4)}, ${f.lng.toFixed(4)} · GARS <b>${toGARS(f.lat,f.lng)}</b> · ±${f.spreadNm.toFixed(1)} NM (${f.n} cut${f.n>1?'s':''})` : (state.elt.length>=2?'Bearings don’t cross ahead — recheck headings.':'');
+}
+function clearElt(){ state.elt=[]; if(state.layers.elt) state.layers.elt.clearLayers(); renderEltList(); }
 function generatePath(){
   cancelSim();
   let wp=[], usedArea=null;
@@ -3354,7 +3415,8 @@ function setView(v){
       const es=$('env-seg'); if(es) es.style.display=sar?'flex':'none';
       const sa=$('sec-air'); if(sa) sa.style.display='block';
       document.querySelectorAll('#pat-seg [data-sar]').forEach(o=>o.style.display=sar?'':'none');
-      if(sar) setEnv(state.env||'maritime'); else { const sd=$('sec-datum'); if(sd) sd.style.display='none'; } }
+      { const se=$('sec-elt'); if(se) se.style.display=sar?'block':'none'; }
+      if(sar){ setEnv(state.env||'maritime'); renderEltList(); } else { const sd=$('sec-datum'); if(sd) sd.style.display='none'; } }
     $('side-operate').style.display = v==='operate'?'block':'none';
     $('side-plan').style.display = v==='plan'?'block':'none';
     setTimeout(()=>state.map&&state.map.invalidateSize(),60);
@@ -3559,6 +3621,8 @@ function initApp(){
   $('d-lkp').onchange=()=>{ const c=parseCoords($('d-lkp').value); if(c){ state.lkp=c; drawDatum(); } };
   // airspace + MSA + environment
   $('air-add').onclick=armAir;
+  $('elt-add').onclick=addElt;
+  $('elt-clear').onclick=clearElt;
   $('n-msa').oninput=()=>{ $('n-msa').dataset.touched='1'; state.msa=+$('n-msa').value||0; if(state.waypoints&&state.waypoints.length) updateSummary(); };
   document.querySelectorAll('#env-seg .opt').forEach(o=>o.onclick=()=>setEnv(o.dataset.env));
   $('pl-save').onclick=saveMission; renderMissions();
