@@ -695,9 +695,9 @@ body.popout #app{display:block}
       </div>
 
       <div class="card span2">
-        <div class="hd"><span class="n">4</span> Catch Logbook → Google Sheets</div>
+        <div class="hd"><span class="n">4</span> <span id="cardlog-title">Catch Logbook → Google Sheets</span></div>
         <div class="bd">
-          <p class="hint">Every fish you spot is saved on this device and plotted as a hotspot heatmap (LOGBOOK tab). Optionally mirror every spot into a <b>Google Sheet</b> so your whole crew shares one running history of where fish have been found.</p>
+          <p class="hint" id="cardlog-body">Every fish you spot is saved on this device and plotted as a hotspot heatmap (LOGBOOK tab). Optionally mirror every spot into a <b>Google Sheet</b> so your whole crew shares one running history of where fish have been found.</p>
           <label class="fld" style="margin-top:12px"><span class="lab">Google Apps Script Web App URL</span>
             <input id="sheet-url" placeholder="https://script.google.com/macros/s/…/exec"></label>
           <div class="row" style="max-width:360px">
@@ -719,7 +719,7 @@ body.popout #app{display:block}
       </div>
     </div>
     <div class="bigcta"><button class="btn cyan" id="btn-goops">GO TO OPERATIONS →</button></div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.2</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.3</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -765,6 +765,7 @@ body.popout #app{display:block}
             <button class="btn sm cyan" id="ai-toggle">▶ Start Live AI</button>
             <select id="ai-mode" title="Detector">
               <option value="anomaly">Surface anomaly (no model)</option>
+              <option value="thermal">Thermal / IR hot-spot</option>
               <option value="model">Neural model (COCO)</option>
             </select>
           </div>
@@ -1051,7 +1052,7 @@ body.popout #app{display:block}
       <span class="lb">AI</span>
       <div class="grp">
         <button class="labbtn go" id="lab-ai">▶ Start AI</button>
-        <select class="lab-sel" id="lab-mode"><option value="anomaly">Surface anomaly</option><option value="model">Neural net</option></select>
+        <select class="lab-sel" id="lab-mode"><option value="anomaly">Surface anomaly</option><option value="thermal">Thermal / IR hot-spot</option><option value="model">Neural net</option></select>
         <span class="lb">Sens</span>
         <input type="range" id="lab-sens" min="0" max="1" step="0.01" value="0.6" style="width:88px;accent-color:#22b8d8">
       </div>
@@ -1164,11 +1165,11 @@ body.popout #app{display:block}
 <!-- ===== MARK FISH MODAL ===== -->
 <div id="mark-modal" class="modal-wrap hidden">
   <div class="modal">
-    <div class="modal-hd">Log Fish Contact</div>
+    <div class="modal-hd" id="mk-title">Log Fish Contact</div>
     <div class="modal-bd">
-      <label class="fld"><span class="lab">Species</span><select id="mk-species"></select></label>
+      <label class="fld"><span class="lab" id="mk-splabel">Species</span><select id="mk-species"></select></label>
       <div class="row">
-        <label class="fld"><span class="lab">Approx count</span><input id="mk-count" type="number" min="1" value="20"></label>
+        <label class="fld"><span class="lab" id="mk-countlabel">Approx count</span><input id="mk-count" type="number" min="1" value="20"></label>
         <label class="fld"><span class="lab">Confidence %</span><input id="mk-conf" type="number" min="1" max="100" value="85"></label>
       </div>
       <label class="fld"><span class="lab">Note (optional)</span><input id="mk-note" placeholder="e.g. busting bait on the surface"></label>
@@ -1195,7 +1196,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.2';
+const APP_VERSION='2.3';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1336,6 +1337,17 @@ function applyProfile(ed){
   const li=$('lic-input'); if(li) li.placeholder=p.prefix+'-XXXX-XXXX';
   const mp=document.querySelector('meta[name=theme-color]'); if(mp) mp.setAttribute('content',p.accent);
   ['emblem-boot:EB','emblem-lic:EL','emblem-top:ET'].forEach(s=>{ const [id,sfx]=s.split(':'); const el=$(id); if(el) el.innerHTML=emblemMarkup(p.emblem,sfx); });
+  // mission terminology (fish edition keeps original copy)
+  const sar=p.noun!=='fish';
+  const t=(id,fishTxt,sarTxt)=>{ const e=$(id); if(e) e.textContent = sar?sarTxt:fishTxt; };
+  t('op-mark','＋ Mark Fish on Map','＋ Mark Contact');
+  t('mk-title','Log Fish Contact','Log Contact');
+  t('mk-splabel','Species','Target type');
+  t('mk-countlabel','Approx count','Count');
+  t('cardlog-title','Catch Logbook → Google Sheets','Contact Log → Google Sheets');
+  const cb=$('cardlog-body'); if(cb) cb.innerHTML = sar
+    ? 'Every contact you mark is saved on this device and plotted on the hotspot map (LOGBOOK tab). Optionally mirror each one into a <b>Google Sheet</b> so your whole team / mission base shares one running log.'
+    : 'Every fish you spot is saved on this device and plotted as a hotspot heatmap (LOGBOOK tab). Optionally mirror every spot into a <b>Google Sheet</b> so your whole crew shares one running history of where fish have been found.';
 }
 function currentEd(){ try{ return new URLSearchParams(location.search).get('ed') || localStorage.getItem('oss_edition'); }catch(e){ return null; } }
 function chooseEdition(ed){ try{ localStorage.setItem('oss_edition',ed); }catch(e){} applyProfile(ed); const l=$('launcher'); if(l) l.style.display='none'; gateLicense(); }
@@ -2677,6 +2689,7 @@ function aiVideo(){ const v=$('op-feed')&&$('op-feed').querySelector('video'); r
 function aiToggle(){
   if(ai.on){ aiStop(); return; }
   if(!aiVideo()){ toast('Connect a feed or webcam first (CONNECT tab)'); return; }
+  ai.mode=($('ai-mode')&&$('ai-mode').value)||ai.mode;   // sync from selector (incl. SAR thermal default)
   ai.on=true; ai.bg=null; ai.cool=0; ai.lastBoxes=[];
   hubLog('info','AI vision started · '+ai.mode);
   $('ai-toggle').textContent='■ Stop Live AI'; $('ai-toggle').classList.add('on'); $('ai-badge').style.display='block';
@@ -2692,11 +2705,41 @@ function aiLoop(ts){
   const v=aiVideo(); if(!v){ return; }
   if(ai.mode==='model'){
     if(!ai.busy){ ai.busy=true; runModel(v).then(bs=>{ ai.lastBoxes=bs; ai.busy=false; }).catch(()=>{ ai.busy=false; ai.mode='anomaly'; $('ai-mode').value='anomaly'; toast('Model unavailable — using surface-anomaly detector'); }); }
+  } else if(ai.mode==='thermal'){
+    ai.lastBoxes = detectThermal(v);
   } else {
     ai.lastBoxes = detectAnomaly(v);
   }
   drawAi(ai.lastBoxes);
   handleCandidates(ai.lastBoxes);
+}
+/* Thermal / IR hot-spot detector — finds bright warm blobs (a person's body heat
+   on IR shows white-hot; also flags bright life-rafts/signals in visible). */
+function detectThermal(v, cx){
+  cx=cx||ai;
+  const aw=ai.aw, ah=ai.ah;
+  const c=cx.c||(cx.c=document.createElement('canvas')); c.width=aw; c.height=ah;
+  const x=c.getContext('2d',{willReadFrequently:true});
+  try{ x.drawImage(v,0,0,aw,ah); }catch(e){ return []; }
+  let data; try{ data=x.getImageData(0,0,aw,ah).data; }catch(e){ if(cx===ai){ aiStop(); $('ai-status').innerHTML='<span style="color:var(--red)">Stream not analysable (cross-origin). Use webcam or a CORS gateway.</span>'; } return []; }
+  const n=aw*ah, g=cx.g||(cx.g=new Float32Array(n));
+  for(let i=0;i<n;i++) g[i]=0.299*data[i*4]+0.587*data[i*4+1]+0.114*data[i*4+2];
+  const sens=cx.sens!=null?cx.sens:ai.sens;
+  const thr=lerp(232,150,clamp(sens,0,1));                  // brighter→hotter; higher sens = lower threshold
+  const GX=32, GY=24, cw=aw/GX, ch=ah/GY, val=new Float32Array(GX*GY), cnt=new Float32Array(GX*GY), brt=new Float32Array(GX*GY);
+  for(let y=0;y<ah;y++) for(let xx=0;xx<aw;xx++){ const l=g[y*aw+xx], gi=(Math.floor(y/ch)|0)*GX+(Math.floor(xx/cw)|0); cnt[gi]++; if(l>thr){ val[gi]++; brt[gi]+=l; } }
+  const hot=new Uint8Array(GX*GY); for(let i=0;i<GX*GY;i++) if(cnt[i] && val[i]/cnt[i] > 0.35) hot[i]=1;   // ≥35% of cell is hot
+  const seen=new Uint8Array(GX*GY), boxes=[];
+  for(let cy=0;cy<GY;cy++) for(let cx2=0;cx2<GX;cx2++){ const id=cy*GX+cx2; if(!hot[id]||seen[id]) continue;
+    let st=[[cx2,cy]]; seen[id]=1; let minx=cx2,maxx=cx2,miny=cy,maxy=cy,sum=0,num=0;
+    while(st.length){ const p=st.pop(),px=p[0],py=p[1],pid=py*GX+px; sum+=brt[pid]/Math.max(1,val[pid]); num++;
+      minx=Math.min(minx,px);maxx=Math.max(maxx,px);miny=Math.min(miny,py);maxy=Math.max(maxy,py);
+      const nb=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(let k=0;k<4;k++){ const nx=px+nb[k][0],ny=py+nb[k][1]; if(nx<0||ny<0||nx>=GX||ny>=GY) continue; const nid=ny*GX+nx; if(hot[nid]&&!seen[nid]){ seen[nid]=1; st.push([nx,ny]); } } }
+    const area=(maxx-minx+1)*(maxy-miny+1);
+    if(area < GX*GY*0.45) boxes.push({ x:minx/GX, y:miny/GY, w:(maxx-minx+1)/GX, h:(maxy-miny+1)/GY, score:Math.min(1,(sum/num-thr)/(255-thr)*0.6+0.4), label:'heat' });
+  }
+  boxes.sort((a,b)=>b.score-a.score); return boxes.slice(0,8);
 }
 function detectAnomaly(v, cx){
   cx=cx||ai;
@@ -2964,6 +3007,7 @@ function labUseDroneFeed(){
 function labToggleAi(){
   if(lab.on){ lab.on=false; if(lab.raf)cancelAnimationFrame(lab.raf); $('lab-ai').textContent='▶ Start AI'; $('lab-ai').classList.remove('on'); labClearHud(); return; }
   const v=labVid(); if(!v||(!v.getAttribute('src')&&!v.srcObject)){ toast('Load a source first (Video file · Screen · Webcam)'); return; }
+  lab.mode=($('lab-mode')&&$('lab-mode').value)||lab.mode;   // sync from selector
   lab.on=true; lab.bg=null; lab.boxes=[]; $('lab-ai').textContent='■ Stop AI'; $('lab-ai').classList.add('on');
   lab.raf=requestAnimationFrame(labLoop);
 }
@@ -2974,6 +3018,7 @@ function labLoop(ts){
   lab._fc++; if(now-lab._ft>500){ lab.fps=Math.round(lab._fc*1000/(now-lab._ft)); lab._fc=0; lab._ft=now; }
   if(now-lab.last>=140){ lab.last=now;
     if(lab.mode==='model'){ if(!lab.busy){ lab.busy=true; runModel(v).then(bs=>{lab.boxes=bs;lab.busy=false;}).catch(()=>{lab.busy=false; lab.mode='anomaly'; $('lab-mode').value='anomaly'; toast('Neural model unavailable — using surface-anomaly');}); } }
+    else if(lab.mode==='thermal') lab.boxes=detectThermal(v, lab);
     else lab.boxes=detectAnomaly(v, lab);
     if(lab.auto && (lab.boxes||[]).some(b=>(b.score||0)>0.5) && now-lab.lastCap>1400){ lab.lastCap=now; labAutoCapture(); }
   }
@@ -3190,7 +3235,7 @@ function initApp(){
   $('log-clear').onclick=()=>{ if(confirm('Clear the entire logbook? This removes all spots on this device.')){ state.detections=[]; saveDet(); renderDetections(); updateHeat(); renderLogbook(); } };
 
   // operate
-  $('op-mark').onclick=()=>{ state.markMode=true; $('cross-hint').textContent='Tap the map to log a fish contact'; $('cross-hint').style.display='block'; if(state.map)state.map.getContainer().style.cursor='crosshair'; };
+  $('op-mark').onclick=()=>{ state.markMode=true; $('cross-hint').textContent='Tap the map to log a '+(EDITION==='fish'?'fish contact':'contact'); $('cross-hint').style.display='block'; if(state.map)state.map.getContainer().style.cursor='crosshair'; };
   $('op-cleardet').onclick=()=>{ if(confirm('Clear all logged contacts?')){ state.detections=[]; saveDet(); renderDetections(); updateHeat(); renderLogbook(); } };
   $('op-snap').onclick=()=>snapshotFeed();
   $('op-capture').onclick=()=>captureToDataset();
@@ -3203,6 +3248,10 @@ function initApp(){
   // AI vision engine
   $('ai-toggle').onclick=()=>aiToggle();
   $('ai-mode').onchange=()=>{ ai.mode=$('ai-mode').value; if(ai.on&&ai.mode==='model') $('ai-status').textContent='Loading neural model…'; };
+  // SAR/CAP default to thermal/IR hot-spot detection (people show as heat).
+  // Only touch the DOM here — ai/lab objects are in TDZ during bootstrap-time init;
+  // aiToggle()/labToggleAi() sync mode from these selects when started.
+  if(EDITION!=='fish'){ const am=$('ai-mode'); if(am) am.value='thermal'; const lm=$('lab-mode'); if(lm) lm.value='thermal'; }
   $('ai-sens').oninput=()=>{ ai.sens=+$('ai-sens').value; };
   $('ai-auto-wrap').onclick=()=>{ ai.auto=!ai.auto; $('ai-auto-wrap').classList.toggle('on',ai.auto); };
   $('ai-label').onclick=()=>labelLive();
