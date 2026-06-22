@@ -485,6 +485,9 @@ body.popout #app{display:block}
 .air-row .air-dot{width:9px;height:9px;border-radius:50%;flex:none}
 .air-row .btn{margin-left:auto;padding:1px 7px}
 .air-tag{color:#fff;font:800 10px/1 var(--mono);padding:2px 4px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);text-align:center}
+.grid-lab{font:700 9px/1 var(--mono);color:#0a2c70;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap;transform:translateY(1px)}
+.elt-tag{font:700 9px/1 var(--mono);color:#fff;background:#7c3aed;padding:2px 5px;border-radius:4px;border:1.5px solid #fff;white-space:nowrap}
+.elt-fix{font:800 9px/1 var(--mono);color:#fff;background:#dc2626;padding:3px 6px;border-radius:4px;border:2px solid #fff;white-space:nowrap}
 /* ===== Comms center ===== */
 #comms-center{position:fixed;top:58px;right:0;width:362px;max-width:94vw;height:calc(100vh - 58px);height:calc(100dvh - 58px);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 34px rgba(16,42,66,.14);z-index:1500;display:flex;flex-direction:column;transition:transform .25s}
 #comms-center.hidden{transform:translateX(105%)}
@@ -761,7 +764,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.8</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">2.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -774,6 +777,7 @@ body.popout #app{display:block}
         <button class="btn sm" id="mt-sat">🛰 Labels</button>
         <button class="btn sm on" id="mt-heat">🔥 Hotspots</button>
         <button class="btn sm" id="mt-fit">⤢ Fit Spots</button>
+        <button class="btn sm" id="mt-grid" title="GARS grid (SAR/CAP tasking)">▦ Grid</button>
       </div>
       <div class="map-badge" id="map-badge">—</div>
       <div class="crosshair-hint" id="cross-hint"></div>
@@ -1270,7 +1274,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='2.8';
+const APP_VERSION='2.9';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1340,6 +1344,7 @@ const state = {
   pattern:'vesselgrid',
   alt:100, spd:8, spacing:144, heading:0, searchRadius:3,
   airspace:[], env:'maritime', msa:200,   // SAR airspace zones, environment, min safe altitude (ft)
+  gridOn:false, elt:[],                    // GARS grid overlay · ELT direction-finding bearings
   lkp:null, datum:null, searchCenter:null, // SAR drift datum
   comms: lsGet('oss_comms','[]') || [],   // transmission log
   waypoints:[],                    // generated mission [{lat,lng}]
@@ -1526,10 +1531,12 @@ function ensureMap(){
   state.layers.sim  = L.layerGroup().addTo(m);
   state.layers.datum= L.layerGroup().addTo(m);
   state.layers.air  = L.layerGroup().addTo(m);
+  state.layers.grid = L.layerGroup().addTo(m);
+  state.layers.elt  = L.layerGroup().addTo(m);
   if(state.airspace&&state.airspace.length) drawAirspace();
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
   m.on('click', onMapClick);
-  m.on('moveend zoomend', updateMapBadge);
+  m.on('moveend zoomend', ()=>{ updateMapBadge(); if(state.gridOn) drawGrid(); });
   state.map=m; state.mapReady=true;
   if(state.home) setHomeMarker(state.home);
   renderDetections(); updateHeat();
@@ -1848,6 +1855,32 @@ function toMGRS(lat,lng,spaced){
   }catch(e){ return '—'; }
 }
 function ddm(lat,lng){ const f=(v,p)=>{ const d=Math.abs(v),deg=Math.floor(d),min=(d-deg)*60; return `${deg}°${min.toFixed(3)}'${v<0?p[1]:p[0]}`; }; return f(lat,'NS')+' '+f(lng,'EW'); }
+/* ===== GARS (Global Area Reference System) — US SAR / CAP grid tasking ===== */
+const _GA="ABCDEFGHJKLMNPQRSTUVWXYZ";  // 24 letters, no I/O
+function garsCell(lat,lng){ const loni=Math.floor((lng+180)/0.5), lati=Math.floor((lat+90)/0.5);
+  return {band:String(loni+1).padStart(3,'0')+_GA[Math.floor(lati/24)]+_GA[lati%24], loni, lati}; }
+function toGARS(lat,lng){
+  const c=garsCell(lat,lng);
+  const cellLonW=-180+c.loni*0.5, cellLatS=-90+c.lati*0.5, dLon=lng-cellLonW, dLat=lat-cellLatS;
+  const qCol=dLon>=0.25?1:0, qRow=dLat>=0.25?0:1, quad=qRow*2+qCol+1;          // 1NW 2NE 3SW 4SE
+  const q15LonW=cellLonW+qCol*0.25, q15LatS=cellLatS+(qRow===0?0.25:0), kLon=lng-q15LonW, kLat=lat-q15LatS;
+  const kCol=Math.min(2,Math.floor(kLon/(0.25/3))), kRow=2-Math.min(2,Math.floor(kLat/(0.25/3)));
+  return c.band+quad+(kRow*3+kCol+1);                                          // e.g. 189LW37
+}
+function toggleGrid(){ state.gridOn=!state.gridOn; const b=$('mt-grid'); if(b) b.classList.toggle('on',state.gridOn); if(state.gridOn) drawGrid(); else if(state.layers.grid) state.layers.grid.clearLayers(); }
+function drawGrid(){
+  const g=state.layers&&state.layers.grid; if(!g||!state.map) return; g.clearLayers();
+  const b=state.map.getBounds(), z=state.map.getZoom();
+  const step = z>=11?0.25:0.5;                                                 // 15' cells when zoomed in, else 30'
+  const w=Math.floor(b.getWest()/step)*step, e=Math.ceil(b.getEast()/step)*step;
+  const s=Math.floor(b.getSouth()/step)*step, n=Math.ceil(b.getNorth()/step)*step;
+  if((e-w)/step * (n-s)/step > 240){ return; }                                // safety cap
+  for(let x=w;x<e-1e-9;x+=step) for(let y=s;y<n-1e-9;y+=step){
+    L.rectangle([[y,x],[y+step,x+step]],{color:'#0a2c70',weight:1,opacity:.55,fill:false,interactive:false}).addTo(g);
+    const lab = step===0.5 ? garsCell(y+step/2,x+step/2).band : toGARS(y+step/2,x+step/2);
+    L.marker([y+step,x],{icon:L.divIcon({className:'',html:`<div class="grid-lab">${lab}</div>`,iconSize:[1,1]}),interactive:false}).addTo(g);
+  }
+}
 function destPoint(lat,lng,brgDeg,distM){
   const R=6371000, d=distM/R, b=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180;
   const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));
@@ -1874,7 +1907,7 @@ function computeDatum(){
   const radNm=Math.max(0.3,(E0+0.33*driftNm)*1.1);
   state.datum={lat:d.lat,lng:d.lng,brg:driftBrg,distNm:driftNm,radNm,H,driftKt,leewayKt};
   drawDatum();
-  $('d-out').innerHTML=`Drift <b>${Math.round(driftBrg)}°T · ${driftNm.toFixed(2)} NM</b> in ${H} h (${driftKt.toFixed(2)} kt · leeway ${leewayKt.toFixed(2)} kt)<br>Datum <b>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</b><br>Grid <b>${toMGRS(d.lat,d.lng,true)}</b><br>Search radius <b>${radNm.toFixed(2)} NM</b> (${(radNm*1.15078).toFixed(2)} mi)`;
+  $('d-out').innerHTML=`Drift <b>${Math.round(driftBrg)}°T · ${driftNm.toFixed(2)} NM</b> in ${H} h (${driftKt.toFixed(2)} kt · leeway ${leewayKt.toFixed(2)} kt)<br>Datum <b>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</b><br>MGRS <b>${toMGRS(d.lat,d.lng,true)}</b> · GARS <b>${toGARS(d.lat,d.lng)}</b><br>Search radius <b>${radNm.toFixed(2)} NM</b> (${(radNm*1.15078).toFixed(2)} mi)`;
 }
 function drawDatum(){
   const g=state.layers&&state.layers.datum; if(!g) return; g.clearLayers();
@@ -2301,7 +2334,8 @@ function relayMsg(d){
     'TYPE '+d.species+(d.count>1?' ×'+d.count:''),
     'POS  '+d.lat.toFixed(5)+', '+d.lng.toFixed(5),
     'DDM  '+ddm(d.lat,d.lng),
-    'GRID '+toMGRS(d.lat,d.lng,true),
+    'MGRS '+toMGRS(d.lat,d.lng,true),
+    'GARS '+toGARS(d.lat,d.lng),
     d.conf?'CONF '+Math.round(d.conf)+'%':null,
     d.note?'NOTE '+d.note:null
   ].filter(Boolean).join('\n');
@@ -3382,6 +3416,7 @@ function initApp(){
   $('mt-sat').onclick=()=>{ state.labelsOn=!state.labelsOn; if(state.labelsOn) state.layers.labels.addTo(state.map); else state.map.removeLayer(state.layers.labels); $('mt-sat').classList.toggle('on',state.labelsOn); };
   $('mt-heat').onclick=()=>{ state.heatOn=!state.heatOn; $('mt-heat').classList.toggle('on',state.heatOn); updateHeat(); };
   $('mt-fit').onclick=()=>fitAllDetections();
+  $('mt-grid').onclick=()=>toggleGrid();
 
   // notification center
   $('btn-bell').onclick=()=>toggleNotif();
