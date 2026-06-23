@@ -790,7 +790,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.8</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -893,6 +893,17 @@ body.popout #app{display:block}
       <!-- side panel: PLAN -->
       <div id="side-plan" style="display:none">
         <div class="side-hd"><span class="dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></span> AUTOMATED SEARCH MISSION</div>
+        <div class="sec" id="sec-opt">
+          <h4>Search Optimizer</h4>
+          <div class="note" style="margin-top:0">Sets altitude, line spacing &amp; speed for your target from search theory — <b>POD = 1−e^(−W/S)</b>, capped to FAA Part 107.</div>
+          <div class="drow">
+            <label class="fld2"><span class="lab2">Target</span><select id="opt-target"></select></label>
+            <label class="fld2"><span class="lab2">Target POD %</span><input class="numin2" id="opt-pod" type="number" min="40" max="95" step="5" value="78"></label>
+          </div>
+          <button class="btn full" id="opt-go" style="margin-top:9px;background:var(--brand);color:#fff;border:none">◎ Optimize</button>
+          <div class="note" id="opt-out" style="margin-top:8px">Pick a target &amp; POD, then Optimize.</div>
+          <button class="btn sm full" id="opt-apply" style="margin-top:7px">Apply to plan →</button>
+        </div>
         <div class="seg" id="env-seg" style="display:none;margin-bottom:11px">
           <div class="opt on" data-env="maritime">⚓ Maritime</div>
           <div class="opt" data-env="inland">⛰ Inland</div>
@@ -1318,7 +1329,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='3.8';
+const APP_VERSION='3.9';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -2096,6 +2107,43 @@ function relayObjective(){ const o=state.objective; if(!o){ toast('Set an object
   else prompt('Copy steering:',msg); }
 function clearObjective(){ state.objective=null; if(state.layers.obj) state.layers.obj.clearLayers(); const bar=$('steer-bar'); if(bar) bar.style.display='none'; if(typeof bc!=='undefined'&&bc){ try{ bc.postMessage({type:'objclear'}); }catch(e){} } }
 function directTo(id){ const d=state.detections.find(x=>x.id===id); if(!d) return; setObjective(d.lat,d.lng,d.species); setView('operate'); if(state.map) state.map.panTo([d.lat,d.lng]); }
+
+/* ============================================================================
+   SEARCH OPTIMIZER — research-grounded altitude / track-spacing / speed per
+   target. Coverage C = W/S, POD = 1 − e^(−C); FAA Part 107 caps 400 ft / 100 mph.
+   Derived from USCG Theory of Search + IAMSAR + UAV-detection studies (2026-06).
+   ============================================================================ */
+const SEARCH_CLASS = {
+  person:  {alt:200, W:160, spd:13, sensor:'EO by day · Thermal at night', why:'A person is a small, resolution-limited target — stay low (~200 ft AGL) to keep the ground sample fine (≤3–4 cm/px, where detection recall is ~95%) and fly slow.'},
+  smallobj:{alt:200, W:150, spd:13, sensor:'EO + Thermal',                 why:'Small object (PFD, debris, signal) — low altitude + tight spacing to hold resolution; add thermal for low visibility.'},
+  largeobj:{alt:360, W:560, spd:22, sensor:'EO + Thermal',                 why:'Large, high-contrast object (raft/vessel/vehicle/wreckage) — more altitude buys swath without losing the target.'},
+  fish:    {alt:300, W:260, spd:12, sensor:'EO + polarizer · near midday', why:'Only near-surface fish show and detection concentrates near-track. Fly near midday with a polarizer to beat glare; keep seas ≤ Beaufort 3.'},
+  school:  {alt:300, W:420, spd:14, sensor:'EO + polarizer · near midday', why:'Surface schools / bait give a wider signature; midday sun + polarizer cut glare for the widest usable swath.'},
+};
+function targetClass(n){ n=(n||'').toLowerCase();
+  if(/in water|survivor|hiker|ground team|\bperson\b/.test(n)) return 'person';
+  if(/raft|vessel|boat|vehicle|wreck|aircraft/.test(n)) return 'largeobj';
+  if(/jacket|pfd|debris|track|sign|signal|flare|campsite|shelter|unknown/.test(n)) return 'smallobj';
+  if(/bait|mullet|menhaden|school|tarpon|sardine/.test(n)) return 'school';
+  return 'fish';
+}
+function runOptimize(){
+  const tgt=$('opt-target').value, pod=Math.min(0.95,Math.max(0.4,(+$('opt-pod').value||78)/100));
+  const cls=SEARCH_CLASS[targetClass(tgt)];
+  const C=-Math.log(1-pod);                 // coverage factor for desired POD
+  const S=Math.max(40,Math.round(cls.W/C)); // track spacing (ft) = W / C
+  const alt=Math.min(400,cls.alt), spd=Math.min(100,cls.spd);   // Part 107 caps
+  state._opt={alt,spacingFt:S,spd,sensor:cls.sensor};
+  $('opt-out').innerHTML=`<b>${alt} ft AGL</b> · line spacing <b>${S} ft</b> · <b>${spd} mph</b> · ${cls.sensor}<br>`+
+    `<span style="color:var(--dim)">${cls.why} → POD ≈ <b>${Math.round(pod*100)}%</b> at coverage C=${C.toFixed(2)} (S = W/C, sweep width W ≈ ${cls.W} ft). Capped to FAA Part 107 (400 ft / 100 mph).</span>`;
+}
+function applyOptimize(){
+  if(!state._opt) runOptimize(); const o=state._opt;
+  const set=(id,v)=>{ const el=$(id); if(el){ el.value=v; if(el.oninput) el.oninput(); } };
+  set('r-alt',o.alt); set('r-sp',o.spacingFt); set('r-spd',o.spd);
+  if(o.sensor&&/thermal/i.test(o.sensor)){ const am=$('ai-mode'); if(am){ am.value='thermal'; ai.mode='thermal'; } }
+  toast('Plan optimized for '+$('opt-target').value+' · '+o.alt+' ft · '+o.spacingFt+' ft spacing');
+}
 function generatePath(){
   cancelSim();
   let wp=[], usedArea=null;
@@ -3489,6 +3537,7 @@ function setView(v){
       const sa=$('sec-air'); if(sa) sa.style.display='block';
       document.querySelectorAll('#pat-seg [data-sar]').forEach(o=>o.style.display=sar?'':'none');
       { const se=$('sec-elt'); if(se) se.style.display=sar?'block':'none'; }
+      { const ot=$('opt-target'); if(ot && !ot.options.length){ ot.innerHTML=TARGETS.map(f=>`<option>${f.n}</option>`).join(''); runOptimize(); } }
       if(sar){ setEnv(state.env||'maritime'); renderEltList(); } else { const sd=$('sec-datum'); if(sd) sd.style.display='none'; } }
     $('side-operate').style.display = v==='operate'?'block':'none';
     $('side-plan').style.display = v==='plan'?'block':'none';
@@ -3699,6 +3748,9 @@ function initApp(){
   $('air-add').onclick=armAir;
   $('elt-add').onclick=addElt;
   $('elt-clear').onclick=clearElt;
+  // search optimizer
+  $('opt-go').onclick=runOptimize;
+  $('opt-apply').onclick=applyOptimize;
   $('n-msa').oninput=()=>{ $('n-msa').dataset.touched='1'; state.msa=+$('n-msa').value||0; if(state.waypoints&&state.waypoints.length) updateSummary(); };
   document.querySelectorAll('#env-seg .opt').forEach(o=>o.onclick=()=>setEnv(o.dataset.env));
   $('pl-save').onclick=saveMission; renderMissions();
