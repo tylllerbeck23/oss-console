@@ -73,6 +73,37 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
 .row2{display:flex;gap:10px;align-items:flex-end}
 .row2 .grow{flex:1}
 .foot{color:#5d7585;font-size:11.5px;text-align:center;margin-top:26px}
+/* profit dashboard */
+.pf-period{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-bottom:14px}
+.seg-b{font:700 11px var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;background:var(--panel2);border:none;color:var(--dim);cursor:pointer;border-right:1px solid var(--line)}
+.seg-b:last-child{border-right:none}
+.seg-b.on{background:var(--accent);color:#06121c}
+.pf-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:760px){.pf-kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 13px}
+.kpi span{font:700 9.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--dim);display:block}
+.kpi b{font:800 21px var(--mono);display:block;margin-top:5px}
+.kpi.big{background:linear-gradient(135deg,rgba(25,230,164,.12),rgba(11,179,212,.08));border-color:#1c6f5e}
+.kpi.big b{color:var(--accent)}
+.kpi i{font:700 11px var(--mono);font-style:normal;color:var(--dim)}
+.pf-tbl td.num,.pf-tbl th.num{text-align:right;font-family:var(--mono)}
+.pf-tbl .pos{color:var(--accent)} .pf-tbl .neg{color:var(--red)}
+.pf-chart{margin:14px 0 4px;display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px;font-size:12px}
+.bar-row .bl{width:140px;flex:none;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:16px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#0bb3d4)}
+.bar-row .bv{width:78px;flex:none;text-align:right;font-family:var(--mono);font-weight:700}
+.pf-form{display:grid;grid-template-columns:1.6fr .6fr 1.4fr auto;gap:8px;align-items:end}
+@media(max-width:760px){.pf-form{grid-template-columns:1fr 1fr}}
+.pf-sub{font:800 12px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin:18px 0 9px;padding-top:14px;border-top:1px solid var(--line)}
+.pf-cat{margin-top:14px}
+.pf-cat summary{cursor:pointer;font:700 12px var(--sans);color:var(--accent);text-transform:uppercase;letter-spacing:.05em;padding:6px 0}
+.pf-catrow{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0}
+.pf-catrow label{margin:0;font-size:9px}
+.pf-catrow .cn{font:700 12.5px var(--sans);color:var(--ink)}
+.ps-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #0f2230}
+.ps-item .grow{flex:1}
 </style></head>
 <body>
 
@@ -152,6 +183,48 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
     <div class="empty" id="empty">No keys issued yet. Generate your first one above.</div>
   </div>
 
+  <!-- PROFIT DASHBOARD -->
+  <div class="card">
+    <h2>💰 Profit dashboard</h2>
+    <div class="pf-period" id="pf-period">
+      <button class="seg-b on" data-per="all">All time</button>
+      <button class="seg-b" data-per="ytd">This year</button>
+      <button class="seg-b" data-per="month">This month</button>
+    </div>
+    <div class="pf-kpis">
+      <div class="kpi"><span>Gross revenue</span><b id="pf-rev">$0</b></div>
+      <div class="kpi"><span>Cost of goods</span><b id="pf-cogs">$0</b></div>
+      <div class="kpi"><span>Processing fees</span><b id="pf-fees">$0</b></div>
+      <div class="kpi big"><span>Net profit</span><b id="pf-net">$0</b><i id="pf-margin">—</i></div>
+      <div class="kpi"><span>Units sold</span><b id="pf-units">0</b></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="pf-tbl">
+        <thead><tr><th>Product</th><th class="num">Price</th><th class="num">Cost</th><th class="num">Units</th><th class="num">Revenue</th><th class="num">Net profit</th><th class="num">Margin</th></tr></thead>
+        <tbody id="pf-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pf-chart" id="pf-chart"></div>
+
+    <div class="pf-sub">Log a kit / hardware sale</div>
+    <div class="pf-form">
+      <select id="ps-prod"></select>
+      <input id="ps-qty" type="number" value="1" min="1" step="1" title="Quantity">
+      <input id="ps-buyer" placeholder="buyer / order # (optional)">
+      <button class="btn acc" id="ps-add">＋ Add sale</button>
+    </div>
+    <div id="ps-list" style="margin-top:10px"></div>
+
+    <details class="pf-cat">
+      <summary>⚙ Edit prices &amp; costs</summary>
+      <div id="pf-catbody" style="margin-top:10px"></div>
+      <div style="margin-top:8px"><button class="btn sm danger" id="pf-catreset">Reset to defaults</button></div>
+    </details>
+
+    <div class="toolbar" style="margin-top:14px"><button class="btn sm" id="pf-csv">Export P&amp;L (CSV)</button></div>
+    <div class="note"><b>Software units</b> = license keys you've issued (counted automatically). <b>Kit/hardware units</b> = sales you log above. Fees estimate <b>Stripe 2.9% + $0.30</b> per order. Edit prices &amp; costs to match your real numbers — everything saves on this device.</div>
+  </div>
+
   <!-- VERIFY -->
   <div class="card">
     <h2>🔎 Verify a key</h2>
@@ -181,7 +254,98 @@ const DEFAULT_OP_HASH='ef63cfba';   // hash of OSS-OPS-R8WK-4ZQ2 (change via "Ch
 function opHash(){ try{ return localStorage.getItem('oss_op_hash')||DEFAULT_OP_HASH; }catch(e){ return DEFAULT_OP_HASH; } }
 const $=id=>document.getElementById(id);
 
-function unlock(){ $('gate').style.display='none'; $('app').style.display='block'; render(); }
+/* ===== profit dashboard (declared early so session auto-unlock can't hit a TDZ) ===== */
+const DEFAULT_CATALOG=[
+  {id:'OSS', name:'Fishing software', price:249.99, cost:0, kind:'software', pill:'fish'},
+  {id:'SAR', name:'SAR software', price:749, cost:0, kind:'software', pill:'sar'},
+  {id:'CAP', name:'CAP software', price:749, cost:0, kind:'software', pill:'cap'},
+  {id:'KITF', name:'Fishing Pro Kit · Mavic 3T', price:9999, cost:7400, kind:'kit', pill:'fish'},
+  {id:'KITS', name:'SAR Responder Kit · Matrice 4T', price:11999, cost:8200, kind:'kit', pill:'sar'},
+];
+const FEE_PCT=0.029, FEE_FIX=0.30;
+let pfPeriod='all', pfInit=false;
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function loadCatalog(){ let ov={}; try{ ov=JSON.parse(localStorage.getItem('oss_catalog')||'{}'); }catch(e){}
+  return DEFAULT_CATALOG.map(p=>({...p, price:(ov[p.id]&&ov[p.id].price!=null)?+ov[p.id].price:p.price, cost:(ov[p.id]&&ov[p.id].cost!=null)?+ov[p.id].cost:p.cost })); }
+function saveCatalog(cat){ const ov={}; cat.forEach(p=>ov[p.id]={price:p.price,cost:p.cost}); try{ localStorage.setItem('oss_catalog',JSON.stringify(ov)); }catch(e){} }
+function loadSales(){ try{ return JSON.parse(localStorage.getItem('oss_sales')||'[]'); }catch(e){ return []; } }
+function saveSales(a){ try{ localStorage.setItem('oss_sales',JSON.stringify(a)); }catch(e){} }
+function periodStart(){ const n=new Date(); if(pfPeriod==='month') return new Date(n.getFullYear(),n.getMonth(),1).getTime(); if(pfPeriod==='ytd') return new Date(n.getFullYear(),0,1).getTime(); return 0; }
+function inPeriod(ts){ return ts>=periodStart(); }
+function money(n){ n=Math.round(n*100)/100; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function unitsFor(p){ return p.kind==='software'
+  ? load().filter(r=>r.prefix===p.id && inPeriod(r.ts)).length
+  : loadSales().filter(s=>s.id===p.id && inPeriod(s.ts)).reduce((a,s)=>a+(+s.qty||0),0); }
+function renderProfit(){
+  const cat=loadCatalog(); let tR=0,tC=0,tF=0,tU=0;
+  const rows=cat.map(p=>{ const u=unitsFor(p), rev=u*p.price, cogs=u*p.cost, fees=u>0?(rev*FEE_PCT+u*FEE_FIX):0, net=rev-cogs-fees;
+    tR+=rev; tC+=cogs; tF+=fees; tU+=u; return {p,u,rev,cogs,fees,net,margin:rev>0?net/rev:0}; });
+  const tN=tR-tC-tF;
+  $('pf-rev').textContent=money(tR); $('pf-cogs').textContent=money(tC); $('pf-fees').textContent=money(tF);
+  $('pf-net').textContent=money(tN); $('pf-units').textContent=tU;
+  $('pf-margin').textContent= tR>0?(Math.round(tN/tR*100)+'% margin'):'—';
+  const tb=$('pf-tbody'); tb.innerHTML='';
+  rows.forEach(r=>{ const tr=document.createElement('tr');
+    tr.innerHTML='<td><span class="pill '+r.p.pill+'">'+(r.p.kind==='kit'?'KIT':'SW')+'</span> '+escapeHtml(r.p.name)+'</td>'
+      +'<td class="num">'+money(r.p.price)+'</td><td class="num">'+money(r.p.cost)+'</td><td class="num">'+r.u+'</td>'
+      +'<td class="num">'+money(r.rev)+'</td><td class="num '+(r.net>=0?'pos':'neg')+'">'+money(r.net)+'</td>'
+      +'<td class="num">'+(r.rev>0?Math.round(r.margin*100)+'%':'—')+'</td>';
+    tb.appendChild(tr); });
+  const ch=$('pf-chart'); ch.innerHTML=''; const active=rows.filter(r=>r.u>0);
+  if(!active.length){ ch.innerHTML='<div style="color:#5d7585;font-size:12px;text-align:center;padding:8px">No sales in this period yet — issue a key or log a kit sale.</div>'; }
+  const max=Math.max(1,...active.map(r=>Math.abs(r.net)));
+  active.forEach(r=>{ const row=document.createElement('div'); row.className='bar-row'; const col=r.net>=0?'var(--accent)':'var(--red)';
+    row.innerHTML='<div class="bl">'+escapeHtml(r.p.name)+'</div>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round(Math.abs(r.net)/max*100))+'%;background:'+col+'"></div></div>'
+      +'<div class="bv" style="color:'+col+'">'+money(r.net)+'</div>';
+    ch.appendChild(row); });
+  renderSalesList();
+}
+function renderSalesList(){
+  const cat=loadCatalog(), byId={}; cat.forEach(p=>byId[p.id]=p);
+  const sales=loadSales().slice().sort((a,b)=>b.ts-a.ts); const el=$('ps-list'); el.innerHTML='';
+  if(!sales.length){ el.innerHTML='<div style="color:#5d7585;font-size:12px">No kit/hardware sales logged yet.</div>'; return; }
+  sales.forEach(s=>{ const p=byId[s.id]||{name:s.id,price:0}; const row=document.createElement('div'); row.className='ps-item';
+    row.innerHTML='<span class="mono" style="color:#8aa6b6;white-space:nowrap">'+fmtDate(s.ts)+'</span>'
+      +'<span class="grow">'+escapeHtml(p.name)+' ×'+s.qty+(s.buyer?(' · '+escapeHtml(s.buyer)):'')+'</span>'
+      +'<span class="mono" style="font-weight:700">'+money((+s.qty||0)*(p.price||0))+'</span>'
+      +'<button class="tbtn" data-suid="'+s.uid+'" title="Delete sale">✕</button>';
+    el.appendChild(row); });
+  el.querySelectorAll('[data-suid]').forEach(b=>b.onclick=()=>{ if(confirm('Delete this logged sale?')){ saveSales(loadSales().filter(x=>x.uid!==b.dataset.suid)); renderProfit(); } });
+}
+function refreshPsOptions(){ const sel=$('ps-prod'); const cur=sel.value; sel.innerHTML='';
+  loadCatalog().forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name+' ('+money(p.price)+')'; sel.appendChild(o); });
+  if(cur) sel.value=cur; }
+function buildCatalogEditor(){ const body=$('pf-catbody'); body.innerHTML='';
+  loadCatalog().forEach(p=>{ const row=document.createElement('div'); row.className='pf-catrow';
+    row.innerHTML='<div class="cn">'+escapeHtml(p.name)+'</div>'
+      +'<div><label>Price $</label><input type="number" step="0.01" min="0" data-price="'+p.id+'" value="'+p.price+'"></div>'
+      +'<div><label>Cost $</label><input type="number" step="0.01" min="0" data-cost="'+p.id+'" value="'+p.cost+'"></div>';
+    body.appendChild(row); });
+  body.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{ const cat=loadCatalog();
+    body.querySelectorAll('[data-price]').forEach(i=>{ const p=cat.find(x=>x.id===i.dataset.price); if(p) p.price=Math.max(0,+i.value||0); });
+    body.querySelectorAll('[data-cost]').forEach(i=>{ const p=cat.find(x=>x.id===i.dataset.cost); if(p) p.cost=Math.max(0,+i.value||0); });
+    saveCatalog(cat); refreshPsOptions(); renderProfit(); }); }
+function exportPnl(){ const cat=loadCatalog(); const rows=[['product','kind','units','unit_price','unit_cost','revenue','cogs','fees','net_profit','margin_pct']];
+  let tR=0,tC=0,tF=0,tN=0,tU=0;
+  cat.forEach(p=>{ const u=unitsFor(p), rev=u*p.price, cogs=u*p.cost, fees=u>0?rev*FEE_PCT+u*FEE_FIX:0, net=rev-cogs-fees; tR+=rev;tC+=cogs;tF+=fees;tN+=net;tU+=u;
+    rows.push([p.name,p.kind,u,p.price.toFixed(2),p.cost.toFixed(2),rev.toFixed(2),cogs.toFixed(2),fees.toFixed(2),net.toFixed(2),rev>0?Math.round(net/rev*100):'']); });
+  rows.push(['TOTAL ('+pfPeriod+')','',tU,'','',tR.toFixed(2),tC.toFixed(2),tF.toFixed(2),tN.toFixed(2),tR>0?Math.round(tN/tR*100):'']);
+  const csv=rows.map(r=>r.map(c=>{ c=String(c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(',')).join('\n');
+  dl('oss-profit-'+pfPeriod+'.csv',csv,'text/csv'); }
+function initProfit(){ if(pfInit) return; pfInit=true;
+  $('pf-period').querySelectorAll('.seg-b').forEach(b=>b.onclick=()=>{ pfPeriod=b.dataset.per;
+    $('pf-period').querySelectorAll('.seg-b').forEach(x=>x.classList.toggle('on',x===b)); renderProfit(); });
+  refreshPsOptions(); const fk=loadCatalog().find(p=>p.kind==='kit'); if(fk) $('ps-prod').value=fk.id;
+  $('ps-add').onclick=()=>{ const id=$('ps-prod').value, qty=Math.max(1,parseInt($('ps-qty').value)||1), buyer=$('ps-buyer').value.trim();
+    const arr=loadSales(); arr.push({uid:uid(),ts:Date.now(),id:id,qty:qty,buyer:buyer}); saveSales(arr);
+    $('ps-buyer').value=''; $('ps-qty').value='1'; renderProfit(); };
+  buildCatalogEditor();
+  $('pf-catreset').onclick=()=>{ if(confirm('Reset all prices & costs to defaults?')){ try{localStorage.removeItem('oss_catalog');}catch(e){} buildCatalogEditor(); refreshPsOptions(); renderProfit(); } };
+  $('pf-csv').onclick=exportPnl;
+}
+
+function unlock(){ $('gate').style.display='none'; $('app').style.display='block'; initProfit(); render(); }
 function tryUnlock(){ const v=$('gate-pin').value; if(keyHash(normKey(v))===opHash()){ try{sessionStorage.setItem('oss_op_ok','1');}catch(e){} unlock(); } else { $('gate-err').textContent='Wrong passcode.'; $('gate-pin').select(); } }
 $('gate-go').onclick=tryUnlock;
 $('gate-pin').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(); });
@@ -254,6 +418,7 @@ function render(){
   tb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ copy(load()[+b.dataset.copy].key); b.textContent='✓'; setTimeout(()=>b.textContent='⧉',1000); });
   tb.querySelectorAll('[data-tog]').forEach(b=>b.onclick=()=>{ const l=load(); const r=l[+b.dataset.tog]; r.status=r.status==='revoked'?'active':'revoked'; save(l); render(); });
   tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const l=load(); if(confirm('Delete this row from the log? (does not disable the key)')){ l.splice(+b.dataset.del,1); save(l); render(); } });
+  try{ if(pfInit) renderProfit(); }catch(e){}
 }
 function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
