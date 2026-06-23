@@ -134,7 +134,7 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
       <div class="tag">★ Most popular</div>
       <h3>OSS · Fishing</h3>
       <div class="desc">Aerial fish-spotting for sport & charter crews.</div>
-      <div class="amt">$249<small> one-time</small></div>
+      <div class="amt">$249<small>.99 · lifetime</small></div>
       <ul>
         <li>Live AI fish detection on your feed</li>
         <li>Automated DJI search-pattern export</li>
@@ -158,7 +158,7 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
         <li>Thermal/IR person detection</li>
         <li>Direct-crews live steering</li>
       </ul>
-      <div class="buy"><a class="btn ghost" id="buy-sar" href="#" data-edition="sar">Get SAR edition →</a></div>
+      <div class="buy"><a class="btn ghost" id="buy-sar" href="#" data-edition="sar">Contact for team access →</a></div>
     </div>
   </div>
   <div class="cap"><b>Civil Air Patrol edition</b> is not sold here — it’s provisioned directly with issued keys.</div>
@@ -192,10 +192,9 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
    Easiest: create products on Lemon Squeezy or Gumroad (handles payment, tax &
    emails the buyer a license key), then drop the checkout URLs below. ============ */
 var CHECKOUT = {
-  // Paste your Stripe Payment Link URLs here, e.g. "https://buy.stripe.com/xxxxxxxx"
-  fish: "",
-  sar:  "",
-  contact: "mailto:[your email]?subject=OSS%20Console"
+  fish: "https://tylerbeacon1.gumroad.com/l/aimgtp",   // OSS Console — Fishing ($249.99, lifetime)
+  sar:  "https://tylerbeacon1.gumroad.com",            // SAR: route to store until a SAR product is added
+  contact: "https://tylerbeacon1.gumroad.com"
 };
 function wire(id,key){ var el=document.getElementById(id); if(!el) return;
   var url=CHECKOUT[key];

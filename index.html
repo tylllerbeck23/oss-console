@@ -780,7 +780,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.4</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.5</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1308,7 +1308,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='3.4';
+const APP_VERSION='3.5';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
