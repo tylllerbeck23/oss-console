@@ -82,6 +82,19 @@ h2{font:800 clamp(26px,4vw,38px)/1.1 var(--sans);letter-spacing:-.3px;margin:8px
 @media(max-width:780px){.buyflow{grid-template-columns:1fr}}
 .cap{background:var(--panel2);border:1px dashed var(--line);border-radius:8px;padding:18px 22px;margin-top:18px;color:var(--dim);font-size:14px}
 .cap b{color:var(--ink)}
+/* kits / shop */
+.kits{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:34px}
+.kit{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:26px;display:flex;flex-direction:column}
+.kit-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.kit .tag{font:700 11px var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+.kit h3{font:800 21px var(--sans);margin:8px 0 0;line-height:1.1}
+.kit-price{font:800 30px var(--sans);color:var(--gold);white-space:nowrap}
+.kit-desc{color:var(--dim);font-size:14px;margin:14px 0 4px}
+.kit-list{list-style:none;padding:0;margin:14px 0 22px;display:flex;flex-direction:column;gap:8px}
+.kit-list li{font-size:13.5px;color:var(--ink);padding-left:22px;position:relative}
+.kit-list li:before{content:"▸";position:absolute;left:2px;color:var(--accent)}
+.kit-buy{margin-top:auto;text-align:center;width:100%}
+@media(max-width:780px){.kits{grid-template-columns:1fr}}
 /* steps */
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
 .st{position:relative;padding:20px 16px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
@@ -103,7 +116,7 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
 <nav><div class="wrap">
   <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient></defs><rect x="1.5" y="1.5" width="37" height="37" rx="9" fill="url(#g)"/><path d="M9 18.3 L32.8 15.4 Q33.9 17.9 31.1 21.2 Q29.5 22.9 26.3 22.9 L13.4 22.9 Q9.9 22.9 9 18.3 Z" fill="#fff"/><path d="M16 18 L18 12.8 L22.9 12.8 L24.1 18 Z" fill="#fff"/></svg>
   <div class="bn">OSS <span class="lt">CONSOLE</span></div>
-  <div class="links"><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="demo.html">Demo</a><a class="btn acc" href="#pricing" style="padding:9px 16px">Get it</a></div>
+  <div class="links"><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#kits">Kits</a><a href="demo.html">Demo</a><a class="btn acc" href="#pricing" style="padding:9px 16px">Get it</a></div>
 </div></nav>
 
 <header class="hero"><div class="wrap">
@@ -183,6 +196,41 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
   <div class="note">🔒 Secure checkout · prices in USD · license key emailed on purchase. Questions? <a href="#" id="contact" style="color:var(--accent)">Contact us</a>.</div>
 </div></section>
 
+<section id="kits"><div class="wrap">
+  <div class="eyebrow">Complete kits</div>
+  <h2>Drone + software, ready to fly.</h2>
+  <div class="lead">Want it turn-key? Get the aircraft, the gear that actually matters on the water or on a search, and OSS Console pre-configured — one purchase.</div>
+  <div class="kits">
+    <div class="kit">
+      <div class="kit-top"><div><div class="tag">★ Fishing Pro Kit</div><h3>DJI Mavic 3T + OSS Fishing</h3></div><div class="kit-price">$6,799</div></div>
+      <div class="kit-desc">Thermal + zoom drone tuned for spotting fish, packed in a hard case with everything you need on the water.</div>
+      <ul class="kit-list">
+        <li><b>DJI Mavic 3T</b> — thermal + 56× zoom, with remote</li>
+        <li>Rugged waterproof hard case (foam-cut)</li>
+        <li>2× extra flight batteries + charging hub</li>
+        <li>ND / polarizer filter set — kills glare on water</li>
+        <li>Remote sunshade hood · 256GB card · landing pad</li>
+        <li><b>OSS Console — Fishing</b> license, pre-installed &amp; tested</li>
+      </ul>
+      <a class="btn gold kit-buy" id="kit-fish" href="#">Reserve / get a quote →</a>
+    </div>
+    <div class="kit">
+      <div class="kit-top"><div><div class="tag">Agencies &amp; teams</div><h3>DJI Matrice 30T + OSS SAR</h3></div><div class="kit-price">$14,999</div></div>
+      <div class="kit-desc">A rugged thermal aircraft plus the SAR console — drift/datum, grids, beacon DF, thermal person-detection.</div>
+      <ul class="kit-list">
+        <li><b>DJI Matrice 30T</b> — thermal/zoom/wide, IP55, ~41 min</li>
+        <li>Hard transit case + extra TB30 batteries</li>
+        <li>BS30 charging station · sunshade · high-endurance cards</li>
+        <li>Spare props · landing pad · field kit</li>
+        <li><b>OSS Console — SAR</b> license (team / yr), configured</li>
+        <li>Onboarding call + mission-profile setup</li>
+      </ul>
+      <a class="btn ghost kit-buy" id="kit-sar" href="#">Request a quote →</a>
+    </div>
+  </div>
+  <div class="note">Kit prices reflect current market hardware prices and may vary — we confirm the exact total on your quote. Just want the software? <a href="#pricing" style="color:var(--accent)">See pricing</a>.</div>
+</div></section>
+
 <section id="faq"><div class="wrap">
   <div class="eyebrow">FAQ</div>
   <h2>Good to know.</h2>
@@ -215,6 +263,7 @@ function wire(id,key){ var el=document.getElementById(id); if(!el) return;
   else el.addEventListener('click',function(e){ e.preventDefault(); alert('Checkout is opening soon — thanks for your interest! Reach out and we’ll get you set up.'); });
 }
 wire('buy-fish','fish'); wire('buy-sar','sar');
+wire('kit-fish','contact'); wire('kit-sar','contact');   // kits = quote/reserve via store contact for now
 var c=document.getElementById('contact'); if(c) c.setAttribute('href',CHECKOUT.contact);
 </script>
 </body></html>
