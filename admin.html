@@ -1,0 +1,284 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070d12">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icon.svg">
+<title>OSS — Operator Console</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#070d12;--panel:#0c1822;--panel2:#0a141c;--line:#173343;--ink:#dde9f0;--dim:#8aa6b6;--accent:#19e6a4;--gold:#ffc24d;--red:#ff5a6a;
+  --sans:'Saira',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 520px at 50% -8%,#0f2533,transparent 70%),var(--bg);color:var(--ink);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.5}
+a{color:var(--gold)}
+.wrap{max-width:980px;margin:0 auto;padding:22px 18px 60px}
+.mono{font-family:var(--mono)}
+.btn{font:700 12.5px var(--sans);letter-spacing:.05em;text-transform:uppercase;padding:11px 18px;border-radius:3px;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.btn.acc{background:var(--accent);color:#06121c;border-color:var(--accent)}
+.btn.gold{background:var(--gold);color:#241a02;border-color:var(--gold)}
+.btn.danger{color:var(--red);border-color:#3a2230}
+.btn.sm{padding:6px 10px;font-size:11px}
+input,select{font:600 14px var(--mono);background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:11px 12px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+label{display:block;font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+
+/* gate */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gatecard{max-width:420px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:30px 26px;text-align:center}
+.lock{width:54px;height:54px;border-radius:12px;background:rgba(255,194,77,.12);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px}
+.gatecard h1{font:800 21px var(--sans);margin:0 0 4px}
+.gatecard p{color:var(--dim);font-size:13px;margin:0 0 18px}
+#gate-err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:10px}
+
+/* console */
+#app{display:none}
+.top{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.emb{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#12b6d6,#0b6d80);display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand b{font:800 17px var(--sans);display:block;line-height:1.1}
+.brand span{font:700 10px var(--mono);letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.top .sp{flex:1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:18px;margin-bottom:16px}
+.card h2{font:800 13px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.keyout{margin-top:14px;background:#06121a;border:1px dashed var(--accent);border-radius:6px;padding:16px;text-align:center;display:none}
+.keyout .k{font:700 24px var(--mono);letter-spacing:.06em;color:var(--accent);word-break:break-all}
+.keyout .meta{color:var(--dim);font-size:12px;margin-top:6px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.stat{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.stat b{font:800 22px var(--mono);display:block}
+.stat span{font:700 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font:700 10px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--dim);padding:8px 8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid #0f2230;vertical-align:middle}
+td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
+.pill{font:700 9.5px var(--mono);padding:2px 7px;border-radius:20px;letter-spacing:.05em}
+.pill.fish{background:rgba(18,182,214,.16);color:#5fd6ee}
+.pill.sar{background:rgba(192,31,47,.18);color:#ff8893}
+.pill.cap{background:rgba(22,53,127,.3);color:#8fb0ff}
+.pill.active{background:rgba(25,230,164,.14);color:var(--accent)}
+.pill.revoked{background:#2a1620;color:var(--red)}
+.tbtn{cursor:pointer;border:none;background:none;color:var(--dim);font-size:14px;padding:2px 5px}
+.tbtn:hover{color:var(--accent)}
+.empty{color:var(--dim);text-align:center;padding:24px;font-size:13px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.note{font-size:12px;color:var(--dim);line-height:1.55;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:10px 12px;margin-top:12px}
+.vresult{margin-top:12px;font:700 14px var(--mono);min-height:20px}
+.ok{color:var(--accent)}.bad{color:var(--red)}
+.row2{display:flex;gap:10px;align-items:flex-end}
+.row2 .grow{flex:1}
+.foot{color:#5d7585;font-size:11.5px;text-align:center;margin-top:26px}
+</style></head>
+<body>
+
+<!-- ============ PASSCODE GATE ============ -->
+<div id="gate">
+  <div class="gatecard">
+    <div class="lock">🔒</div>
+    <h1>Operator Console</h1>
+    <p>Private — enter your operator passcode to manage license keys.</p>
+    <input id="gate-pin" type="password" placeholder="Operator passcode" autocomplete="off" autocapitalize="characters">
+    <div style="margin-top:12px"><button class="btn gold" id="gate-go" style="width:100%">Unlock →</button></div>
+    <div id="gate-err"></div>
+  </div>
+</div>
+
+<!-- ============ CONSOLE ============ -->
+<div id="app"><div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="emb">🛟</div><div><b>OSS Operator</b><span>License Key Management</span></div></div>
+    <div class="sp"></div>
+    <button class="btn sm" id="change-pin">Change passcode</button>
+    <button class="btn sm danger" id="lock-btn">Lock 🔒</button>
+  </div>
+
+  <!-- MINT -->
+  <div class="card">
+    <h2>＋ Issue a license key</h2>
+    <div class="grid">
+      <div>
+        <label>Product / edition</label>
+        <select id="m-prod">
+          <option value="OSS">Fishing — OSS Console</option>
+          <option value="SAR">Search &amp; Rescue — SAR Console</option>
+          <option value="CAP">Civil Air Patrol — CAP Console</option>
+        </select>
+      </div>
+      <div>
+        <label>Buyer email / note (optional, for your records)</label>
+        <input id="m-buyer" placeholder="buyer@email.com — Stripe order #…">
+      </div>
+    </div>
+    <div style="margin-top:14px"><button class="btn acc" id="m-go" style="width:100%">Generate license key →</button></div>
+    <div class="keyout" id="m-out">
+      <div class="k" id="m-key"></div>
+      <div class="meta" id="m-meta"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn gold sm" id="m-copy">Copy key</button>
+        <button class="btn sm" id="m-copymsg">Copy buyer email text</button>
+      </div>
+    </div>
+    <div class="note"><b>Fulfillment flow:</b> when Stripe emails you a sale, pick the product, paste the buyer's email, hit Generate, then <b>Copy buyer email text</b> and send it. The key is logged below automatically. Keys work offline forever and only unlock the product they were issued for.</div>
+  </div>
+
+  <!-- LOG -->
+  <div class="card">
+    <h2>📒 Issued keys</h2>
+    <div class="stats">
+      <div class="stat"><b id="st-total">0</b><span>Total issued</span></div>
+      <div class="stat"><b id="st-fish">0</b><span>Fishing</span></div>
+      <div class="stat"><b id="st-sar">0</b><span>SAR</span></div>
+      <div class="stat"><b id="st-cap">0</b><span>CAP</span></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn sm" id="exp-csv">Export CSV</button>
+      <button class="btn sm" id="exp-json">Backup (JSON)</button>
+      <button class="btn sm" id="imp-json">Restore backup</button>
+      <input type="file" id="imp-file" accept=".json" style="display:none">
+      <div style="flex:1"></div>
+      <button class="btn sm danger" id="clear-all">Clear all</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="tbl">
+        <thead><tr><th>Date</th><th>Product</th><th>Key</th><th>Buyer / note</th><th>Status</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">No keys issued yet. Generate your first one above.</div>
+  </div>
+
+  <!-- VERIFY -->
+  <div class="card">
+    <h2>🔎 Verify a key</h2>
+    <div class="row2">
+      <div class="grow"><input id="v-in" placeholder="Paste a key to check — e.g. OSS-XXXX-XXXX"></div>
+      <button class="btn" id="v-go">Check</button>
+    </div>
+    <div class="vresult" id="v-out"></div>
+  </div>
+
+  <div class="foot">Private operator tool · not linked publicly · <span class="mono">noindex</span>. Revocation status here is for your own bookkeeping — true server-side revocation isn't possible on an offline app.</div>
+</div></div>
+
+<script>
+/* ===== shared with app.html — keep in sync ===== */
+function keyHash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return ('0000000'+h.toString(16)).slice(-8); }
+const normKey=k=>(k||'').trim().toUpperCase();
+const KSALT='oss7s-2026-key-v1';
+const B32='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function algoCheck(prefix,body){ let n=parseInt(keyHash(KSALT+'|'+prefix+'|'+body),16)>>>0; let out=''; for(let i=0;i<4;i++){ out+=B32[n&31]; n=Math.floor(n/32); } return out; }
+function validAlgo(k){ const m=normKey(k).match(/^([A-Z]{3})-([A-Z2-9]{4})-([A-Z2-9]{4})$/); if(!m) return null; return algoCheck(m[1],m[2])===m[3] ? m[1] : null; }
+const MASTER_HASH='2cfe753f';
+const PROD={OSS:{name:'Fishing',pill:'fish'},SAR:{name:'SAR',pill:'sar'},CAP:{name:'CAP',pill:'cap'}};
+
+/* ===== passcode ===== */
+const DEFAULT_OP_HASH='ef63cfba';   // hash of OSS-OPS-R8WK-4ZQ2 (change via "Change passcode")
+function opHash(){ try{ return localStorage.getItem('oss_op_hash')||DEFAULT_OP_HASH; }catch(e){ return DEFAULT_OP_HASH; } }
+const $=id=>document.getElementById(id);
+
+function unlock(){ $('gate').style.display='none'; $('app').style.display='block'; render(); }
+function tryUnlock(){ const v=$('gate-pin').value; if(keyHash(normKey(v))===opHash()){ try{sessionStorage.setItem('oss_op_ok','1');}catch(e){} unlock(); } else { $('gate-err').textContent='Wrong passcode.'; $('gate-pin').select(); } }
+$('gate-go').onclick=tryUnlock;
+$('gate-pin').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(); });
+try{ if(sessionStorage.getItem('oss_op_ok')==='1') unlock(); }catch(e){}
+setTimeout(()=>{ try{$('gate-pin').focus();}catch(e){} },120);
+
+$('lock-btn').onclick=()=>{ try{sessionStorage.removeItem('oss_op_ok');}catch(e){} location.reload(); };
+$('change-pin').onclick=()=>{
+  const a=prompt('New operator passcode (you will type this to get in):'); if(!a) return;
+  const b=prompt('Re-enter the new passcode to confirm:'); if(a!==b){ alert('Passcodes did not match — not changed.'); return; }
+  try{ localStorage.setItem('oss_op_hash',keyHash(normKey(a))); alert('Passcode updated on this device.'); }catch(e){ alert('Could not save.'); }
+};
+
+/* ===== store ===== */
+function load(){ try{ return JSON.parse(localStorage.getItem('oss_issued_keys')||'[]'); }catch(e){ return []; } }
+function save(a){ try{ localStorage.setItem('oss_issued_keys',JSON.stringify(a)); }catch(e){} }
+function fmtDate(ts){ const d=new Date(ts); return d.toLocaleDateString(undefined,{year:'2-digit',month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+
+/* ===== mint ===== */
+function randBody(){ const u=new Uint8Array(4); (crypto||window.crypto).getRandomValues(u); let s=''; for(let i=0;i<4;i++) s+=B32[u[i]%32]; return s; }
+function mintKey(prefix){ const body=randBody(); return prefix+'-'+body+'-'+algoCheck(prefix,body); }
+let lastKey='', lastProd='';
+$('m-go').onclick=()=>{
+  const prefix=$('m-prod').value; const buyer=$('m-buyer').value.trim();
+  let key=mintKey(prefix);
+  const list=load();
+  // avoid the astronomically-unlikely duplicate
+  let guard=0; while(list.some(r=>r.key===key)&&guard++<5) key=mintKey(prefix);
+  list.unshift({ts:Date.now(),prefix:prefix,key:key,buyer:buyer,status:'active'});
+  save(list);
+  lastKey=key; lastProd=prefix;
+  $('m-key').textContent=key;
+  $('m-meta').textContent=PROD[prefix].name+' · issued '+fmtDate(Date.now())+(buyer?(' · '+buyer):'');
+  $('m-out').style.display='block';
+  $('m-buyer').value='';
+  render();
+};
+function copy(t){ try{ navigator.clipboard.writeText(t); }catch(e){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); } }
+$('m-copy').onclick=()=>{ copy(lastKey); $('m-copy').textContent='Copied ✓'; setTimeout(()=>$('m-copy').textContent='Copy key',1400); };
+$('m-copymsg').onclick=()=>{
+  const msg='Thanks for your purchase of OSS '+PROD[lastProd].name+' Console!\n\nYour license key:\n\n    '+lastKey+'\n\nHow to activate:\n1. Open the app: https://ossaplication.netlify.app/app.html\n2. Choose the '+PROD[lastProd].name+' edition.\n3. Paste your key once — it activates on that device and works offline, forever.\n\nInstall it like an app: on the page, use Share → Add to Home Screen (iPhone/iPad) or the Install prompt (Android).\n\nKeep this key safe. Reply here if you need any help.\n\n— Ocean Surveillance Services';
+  copy(msg); $('m-copymsg').textContent='Copied ✓'; setTimeout(()=>$('m-copymsg').textContent='Copy buyer email text',1600);
+};
+
+/* ===== render log ===== */
+function render(){
+  const list=load();
+  $('st-total').textContent=list.length;
+  $('st-fish').textContent=list.filter(r=>r.prefix==='OSS').length;
+  $('st-sar').textContent=list.filter(r=>r.prefix==='SAR').length;
+  $('st-cap').textContent=list.filter(r=>r.prefix==='CAP').length;
+  const tb=$('tbody'); tb.innerHTML='';
+  $('empty').style.display=list.length?'none':'block';
+  list.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    const p=PROD[r.prefix]||{name:r.prefix,pill:'fish'};
+    const act=r.status!=='revoked';
+    tr.innerHTML='<td class="mono" style="color:#8aa6b6;white-space:nowrap">'+fmtDate(r.ts)+'</td>'
+      +'<td><span class="pill '+p.pill+'">'+p.name+'</span></td>'
+      +'<td class="key">'+r.key+'</td>'
+      +'<td>'+(r.buyer?escapeHtml(r.buyer):'<span style="color:#5d7585">—</span>')+'</td>'
+      +'<td><span class="pill '+(act?'active':'revoked')+'">'+(act?'Active':'Revoked')+'</span></td>'
+      +'<td style="white-space:nowrap">'
+        +'<button class="tbtn" data-copy="'+i+'" title="Copy key">⧉</button>'
+        +'<button class="tbtn" data-tog="'+i+'" title="Toggle active/revoked">⏻</button>'
+        +'<button class="tbtn" data-del="'+i+'" title="Delete row">✕</button>'
+      +'</td>';
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ copy(load()[+b.dataset.copy].key); b.textContent='✓'; setTimeout(()=>b.textContent='⧉',1000); });
+  tb.querySelectorAll('[data-tog]').forEach(b=>b.onclick=()=>{ const l=load(); const r=l[+b.dataset.tog]; r.status=r.status==='revoked'?'active':'revoked'; save(l); render(); });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const l=load(); if(confirm('Delete this row from the log? (does not disable the key)')){ l.splice(+b.dataset.del,1); save(l); render(); } });
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ===== export / import ===== */
+function dl(name,text,type){ const b=new Blob([text],{type:type}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); }
+$('exp-csv').onclick=()=>{
+  const list=load(); const rows=[['issued_at','product','key','buyer_note','status']];
+  list.forEach(r=>rows.push([new Date(r.ts).toISOString(),(PROD[r.prefix]||{}).name||r.prefix,r.key,(r.buyer||'').replace(/"/g,'""'),r.status]));
+  const csv=rows.map(r=>r.map(c=>/[",\n]/.test(c)?'"'+c+'"':c).join(',')).join('\n');
+  dl('oss-issued-keys.csv',csv,'text/csv');
+};
+$('exp-json').onclick=()=>dl('oss-keys-backup.json',JSON.stringify(load(),null,2),'application/json');
+$('imp-json').onclick=()=>$('imp-file').click();
+$('imp-file').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ const data=JSON.parse(rd.result); if(!Array.isArray(data)) throw 0; if(confirm('Restore '+data.length+' rows? This replaces the current log.')){ save(data); render(); } }catch(x){ alert('That file is not a valid backup.'); } }; rd.readAsText(f); e.target.value=''; };
+$('clear-all').onclick=()=>{ if(confirm('Clear the ENTIRE issued-key log on this device? Export a backup first if unsure.')){ save([]); render(); } };
+
+/* ===== verify ===== */
+$('v-go').onclick=()=>{
+  const v=$('v-in').value; const o=$('v-out');
+  if(!v.trim()){ o.textContent=''; return; }
+  if(keyHash(normKey(v))===MASTER_HASH){ o.className='vresult ok'; o.textContent='✓ Valid — OWNER MASTER code (unlocks any edition)'; return; }
+  const pfx=validAlgo(v);
+  if(pfx){ o.className='vresult ok'; o.textContent='✓ Valid — unlocks '+(PROD[pfx]||{name:pfx}).name+' edition'; }
+  else { o.className='vresult bad'; o.textContent='✗ Not a valid key (or a legacy pool key not checkable here).'; }
+};
+$('v-in').addEventListener('keydown',e=>{ if(e.key==='Enter') $('v-go').click(); });
+</script>
+</body></html>
