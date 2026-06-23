@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="'Saira',system-ui,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e2230"/><stop offset="1" stop-color="#070d12"/></linearGradient>
+    <radialGradient id="glow" cx="50%" cy="0%" r="75%"><stop offset="0" stop-color="#0f2d3a"/><stop offset="1" stop-color="#070d12" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b6d6"/><stop offset="1" stop-color="#0b6d80"/></linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <!-- faint grid -->
+  <g stroke="#16323f" stroke-width="1" opacity="0.5">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200 M300 0 V630 M600 0 V630 M900 0 V630"/>
+  </g>
+  <!-- frame corner ticks -->
+  <g stroke="#2a6f86" stroke-width="3" fill="none">
+    <path d="M40 40 h34 M40 40 v34 M1160 40 h-34 M1160 40 v34 M40 590 h34 M40 590 v-34 M1160 590 h-34 M1160 590 v-34"/>
+  </g>
+  <!-- tactical detection boxes -->
+  <g font-family="'JetBrains Mono',monospace">
+    <g stroke="#19e6a4" stroke-width="3" fill="none">
+      <path d="M812 250 h22 M812 250 v22 M918 250 h-22 M918 250 v22 M812 356 h22 M812 356 v-22 M918 356 h-22 M918 356 v-22"/>
+    </g>
+    <rect x="812" y="228" width="78" height="16" fill="#19e6a4"/><text x="817" y="241" font-size="12" font-weight="700" fill="#06121c">TRACK 92%</text>
+    <g stroke="#ff4d4d" stroke-width="3" fill="none">
+      <path d="M960 360 h22 M960 360 v22 M1040 360 h-22 M1040 360 v22 M960 430 h22 M960 430 v-22 M1040 430 h-22 M1040 430 v-22"/>
+    </g>
+    <rect x="960" y="338" width="118" height="16" fill="#ff4d4d"/><text x="965" y="351" font-size="12" font-weight="700" fill="#fff">LOCK REDFISH 97%</text>
+  </g>
+  <!-- logo badge -->
+  <g transform="translate(80,250)">
+    <rect width="96" height="96" rx="24" fill="url(#lg)"/>
+    <path d="M22 47 L80 40 Q82 46 75 53 Q71 57 63 57 L33 57 Q24 57 22 47 Z" fill="#fff" transform="scale(1.0)"/>
+    <path d="M39 46 L44 33 L57 33 L60 46 Z" fill="#fff"/>
+  </g>
+  <!-- wordmark + tagline -->
+  <text x="200" y="300" font-size="64" font-weight="800" letter-spacing="2" fill="#ffffff">OSS <tspan fill="#19e6a4">CONSOLE</tspan></text>
+  <text x="202" y="346" font-size="20" font-weight="600" letter-spacing="6" fill="#7fa0b0">AERIAL AI · FISH INTELLIGENCE</text>
+  <text x="80" y="448" font-size="46" font-weight="800" fill="#ffffff">Turn your drone into an <tspan fill="#19e6a4">AI fish-spotter.</tspan></text>
+  <text x="80" y="500" font-size="22" font-weight="500" fill="#9fc0cf">Live feed · on-screen detection · search patterns · hotspot map</text>
+  <!-- price chip -->
+  <g transform="translate(80,532)"><rect width="300" height="44" rx="6" fill="#ffc24d"/><text x="20" y="30" font-size="20" font-weight="800" fill="#06121c">$249.99 · lifetime license</text></g>
+</svg>
