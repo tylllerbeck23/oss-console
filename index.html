@@ -212,7 +212,7 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
         <li>Remote sunshade hood · 256GB card · landing pad</li>
         <li><b>OSS Console — Fishing</b> license, pre-installed &amp; tested</li>
       </ul>
-      <a class="btn gold kit-buy" id="kit-fish" href="#">Reserve / get a quote →</a>
+      <a class="btn gold kit-buy" id="kit-fish" href="#">Buy the kit →</a>
     </div>
     <div class="kit">
       <div class="kit-top"><div><div class="tag">Agencies &amp; teams</div><h3>DJI Matrice 4T + OSS SAR</h3></div><div class="kit-price">$11,999</div></div>
@@ -253,8 +253,9 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
    Easiest: create products on Lemon Squeezy or Gumroad (handles payment, tax &
    emails the buyer a license key), then drop the checkout URLs below. ============ */
 var CHECKOUT = {
-  fish: "https://tylerbeacon1.gumroad.com/l/aimgtp",   // OSS Console — Fishing ($249.99, lifetime)
-  sar:  "https://tylerbeacon1.gumroad.com",            // SAR: route to store until a SAR product is added
+  fish: "https://tylerbeacon1.gumroad.com/l/aimgtp",                 // OSS Console — Fishing software ($249.99)
+  kitfish: "https://buy.stripe.com/7sY4gA9KocGxcwd1Mc5kk01",         // Fishing Pro Kit — Mavic 3T ($9,999, Stripe)
+  sar:  "https://tylerbeacon1.gumroad.com",                         // SAR software: store until a product is added
   contact: "https://tylerbeacon1.gumroad.com"
 };
 function wire(id,key){ var el=document.getElementById(id); if(!el) return;
@@ -263,7 +264,7 @@ function wire(id,key){ var el=document.getElementById(id); if(!el) return;
   else el.addEventListener('click',function(e){ e.preventDefault(); alert('Checkout is opening soon — thanks for your interest! Reach out and we’ll get you set up.'); });
 }
 wire('buy-fish','fish'); wire('buy-sar','sar');
-wire('kit-fish','contact'); wire('kit-sar','contact');   // kits = quote/reserve via store contact for now
+wire('kit-fish','kitfish'); wire('kit-sar','contact');   // Fishing kit = live Stripe; SAR kit = quote for now
 var c=document.getElementById('contact'); if(c) c.setAttribute('href',CHECKOUT.contact);
 </script>
 </body></html>
