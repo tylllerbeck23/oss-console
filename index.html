@@ -47,11 +47,34 @@ nav .links a:hover{color:var(--ink)}
 .hero h1 .lt{color:var(--accent)}
 .hero p{font-size:clamp(15px,2.4vw,19px);color:var(--dim);max-width:640px;margin:18px auto 28px}
 .hero .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.trust{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:18px auto 0;font:600 12.5px var(--sans);color:var(--dim)}
+.trust span{white-space:nowrap}
 .heroshot{display:block;margin:42px auto 0;max-width:880px;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(14,42,66,.18),0 4px 12px rgba(14,42,66,.08);position:relative;aspect-ratio:16/9;background:linear-gradient(160deg,#0e2230,#0a141c)}
 .heroshot:hover .play{transform:scale(1.08)}
 .heroshot .play{transition:transform .15s}
 .heroshot .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--faint);font:600 13px var(--mono);letter-spacing:1px}
 .heroshot .play{width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(8,145,178,.5)}
+/* hero AI-detection visual (replaces the dead placeholder) */
+.heroviz{position:absolute;inset:0;overflow:hidden;background:radial-gradient(125% 95% at 50% 0%,#16506a 0%,#0c3142 46%,#06202e 100%)}
+.heroviz:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(116deg,rgba(255,255,255,.04) 0 2px,transparent 2px 27px);opacity:.7}
+.hv-scan{position:absolute;top:0;bottom:0;left:-170px;width:150px;z-index:1;background:linear-gradient(90deg,transparent,rgba(11,179,212,.20),transparent);animation:hvsweep 5s linear infinite}
+.hv-hud{position:absolute;z-index:4;font:700 11px var(--mono);letter-spacing:1px;color:#c4e9f3;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+.hv-tl{top:14px;left:16px;display:flex;align-items:center;gap:7px}
+.hv-tr{top:14px;right:16px;color:#9fc6d4}
+.hv-rec{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;animation:hvblink 1.2s steps(2,end) infinite}
+.hv-tgt{position:absolute;width:86px;height:62px;transform:translate(-50%,-50%);z-index:2}
+.hv-tgt.sm{width:56px;height:44px}
+.hv-tgt:before{content:"";position:absolute;inset:0;border:1.6px solid var(--accent2);border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.25),0 0 16px rgba(11,179,212,.45) inset;animation:hvpulse 2.6s ease-in-out infinite}
+.hv-fish{position:absolute;left:50%;top:50%;width:48px;height:17px;transform:translate(-50%,-50%) rotate(-13deg);background:radial-gradient(60% 70% at 38% 50%,#0c2530,#05151d);border-radius:50%/62%;opacity:.92}
+.hv-tgt.sm .hv-fish{width:30px;height:12px}
+.hv-fish:after{content:"";position:absolute;right:-8px;top:50%;transform:translateY(-50%);border-left:10px solid #06161d;border-top:7px solid transparent;border-bottom:7px solid transparent}
+.hv-lab{position:absolute;left:-1px;top:calc(100% + 5px);white-space:nowrap;font:700 9.5px var(--mono);letter-spacing:.4px;color:#04161c;background:var(--accent2);padding:2px 6px;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.hv-play{position:absolute;left:50%;bottom:15px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:11px;color:#eaf6fa;font:700 12px var(--sans);letter-spacing:.4px;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.hv-play .play{width:46px;height:46px;font-size:17px;box-shadow:0 6px 18px rgba(8,145,178,.5)}
+@keyframes hvsweep{0%{left:-170px}100%{left:102%}}
+@keyframes hvblink{50%{opacity:.25}}
+@keyframes hvpulse{0%,100%{box-shadow:0 0 0 1px rgba(0,0,0,.25),0 0 16px rgba(11,179,212,.35) inset}50%{box-shadow:0 0 0 1px rgba(0,0,0,.25),0 0 22px rgba(11,179,212,.65) inset}}
+@media(prefers-reduced-motion:reduce){.hv-scan,.hv-rec,.hv-tgt:before{animation:none}}
 /* sections */
 section{padding:62px 0;border-top:1px solid var(--line)}
 h2{font:800 clamp(26px,4vw,38px)/1.1 var(--sans);letter-spacing:-.3px;margin:8px 0 8px}
@@ -130,7 +153,18 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
   <h1>Turn your drone into an<br><span class="lt">AI fish-spotter.</span></h1>
   <p>OSS Console streams your drone’s camera, marks fish on-screen in real time with tactical targeting, flies automated search patterns, and builds a GPS hotspot map of where the fish are.</p>
   <div class="row"><a class="btn gold" href="demo.html">▶ Watch the AI demo</a><a class="btn ghost" href="#pricing">See pricing</a></div>
-  <a class="heroshot" href="demo.html" aria-label="Watch demo"><div class="ph"><div class="play">▶</div>AI VISION · REDFISH DETECTION DEMO</div></a>
+  <div class="trust"><span>✓ One-time license</span><span>✓ Runs offline at sea</span><span>✓ Built for DJI Mavic 3T</span></div>
+  <a class="heroshot" href="demo.html" aria-label="Watch the live AI fish-detection demo">
+    <div class="heroviz">
+      <div class="hv-scan"></div>
+      <div class="hv-hud hv-tl"><span class="hv-rec"></span>REC · OSS-AI VISION</div>
+      <div class="hv-hud hv-tr">ALT 312 ft · 27.31°N</div>
+      <div class="hv-tgt" style="left:24%;top:58%"><span class="hv-fish"></span><span class="hv-lab">REDFISH · 94%</span></div>
+      <div class="hv-tgt" style="left:57%;top:39%"><span class="hv-fish"></span><span class="hv-lab">SNOOK · 88%</span></div>
+      <div class="hv-tgt sm" style="left:78%;top:64%"><span class="hv-fish"></span><span class="hv-lab">BAIT BALL</span></div>
+      <div class="hv-play"><div class="play">▶</div><span>Watch the 30-second AI demo</span></div>
+    </div>
+  </a>
 </div></header>
 
 <section id="features"><div class="wrap">
