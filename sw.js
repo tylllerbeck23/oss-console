@@ -1,7 +1,7 @@
 /* OSS Console service worker — offline app shell.
    Network-first for the app HTML (so it never serves a stale build), cache-first
    for libraries and already-viewed map tiles (so the chart works offline at sea). */
-const C = 'oss-v22';
+const C = 'oss-v23';
 const SHELL = [
   './', './index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -23,10 +23,11 @@ self.addEventListener('fetch', e => {
   if (r.method !== 'GET') return;
   const url = new URL(r.url);
 
-  // app HTML: network-first (fresh build), fall back to cache offline
-  if (r.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
+  // any page navigation (index.html, landing.html, demo.html): network-first,
+  // cache under its OWN url, fall back to its cache (or the app) when offline
+  if (r.mode === 'navigate' || /\.html$/.test(url.pathname)) {
     e.respondWith(
-      fetch(r).then(res => { const cp = res.clone(); caches.open(C).then(c => c.put('./index.html', cp)); return res; })
+      fetch(r).then(res => { const cp = res.clone(); caches.open(C).then(c => c.put(r, cp)); return res; })
               .catch(() => caches.match(r).then(m => m || caches.match('./index.html')))
     );
     return;
