@@ -424,15 +424,19 @@ body.popout #app{display:block}
 @media (max-width:900px){
   .connect-grid{grid-template-columns:1fr}
   .card.span2{grid-column:1}
-  /* topbar wraps; tabs get their own scrollable row */
-  #app{grid-template-rows:auto 1fr}
-  #topbar{flex-wrap:wrap; height:auto; min-height:54px; padding:8px 12px; gap:9px 12px}
+  /* compact single-row scroll top bar + fixed-height scrollable nav row */
+  #app{grid-template-rows:54px 44px 1fr}
+  #topbar{flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; height:54px; min-height:54px; padding:0 12px; gap:8px; scrollbar-width:none}
+  #topbar::-webkit-scrollbar{display:none}
+  .brand{padding:2px 2px; margin-left:0; flex:0 0 auto}
   .brand .sub{display:none}
-  .brand h1{font-size:17px}
-  .tabs{order:5; width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:4px; padding-bottom:2px}
-  .tab{flex:0 0 auto; padding:8px 13px; white-space:nowrap}
-  .status-pills{gap:7px}
-  #btn-popfeed,#btn-popmap{display:none}            /* multi-monitor pop-outs irrelevant on a phone */
+  .brand h1{font-size:16px}
+  .status-pills{gap:6px; margin-left:0; flex:0 0 auto}
+  .pill,.iconbtn{flex:0 0 auto}
+  .iconbtn{padding:6px 9px; font-size:12px}
+  #navbar{padding:0 6px}
+  .tab{padding:0 13px; flex:0 0 auto; white-space:nowrap}
+  #btn-popfeed,#btn-popmap,#btn-guide{display:none}   /* pop-outs / guide not useful on a phone */
   /* stack: map on top, control panel scrolls below */
   #workspace{display:block; overflow-y:auto; -webkit-overflow-scrolling:touch}
   #mapwrap{height:52vh; min-height:300px}
@@ -447,6 +451,7 @@ body.popout #app{display:block}
   .brand h1{font-size:15px}
   .pill{padding:5px 8px;font-size:10px}
   #mapwrap{height:46vh}
+  .map-tools{flex-direction:row;flex-wrap:wrap;max-width:210px;gap:5px}
   .map-tools .btn{padding:6px 8px;font-size:11px}
   #sim-hud{left:8px;right:8px;bottom:8px;padding:9px 10px}
   .bigcta .btn{width:100%}
@@ -773,7 +778,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.1</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.2</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1301,7 +1306,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='3.1';
+const APP_VERSION='3.2';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
