@@ -142,6 +142,8 @@ label.fld .lab{display:block;font-size:10.5px;color:var(--dim);letter-spacing:.5
 .side-hd{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);font-family:var(--sans);font-size:12px;letter-spacing:1.3px;text-transform:uppercase;color:var(--ink2);font-weight:700}
 .side-hd .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .side-scroll{overflow-y:auto;flex:1;min-height:0}
+/* the active ops/plan panel must scroll inside #side (which clips) */
+#side-operate,#side-plan{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .sec{padding:16px;border-bottom:1px solid var(--line)}
 .sec h4{font-family:var(--sans);font-size:11.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);margin-bottom:11px;font-weight:700}
 
@@ -446,6 +448,7 @@ body.popout #app{display:block}
   #mapwrap{height:52vh; min-height:300px}
   #side{border-left:none; border-top:1px solid var(--line); overflow:visible}
   .side-scroll{overflow:visible}
+  #side-operate,#side-plan{overflow:visible; flex:none}   /* mobile: whole workspace scrolls, no nested scroll */
   #notif-center{width:100%; top:auto; bottom:0; height:70vh; border-left:none; border-top:1px solid var(--line); border-radius:16px 16px 0 0}
   #notif-center.hidden{transform:translateY(105%)}
   .log-head{flex-direction:column; align-items:stretch}
@@ -787,7 +790,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.7</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.8</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1315,7 +1318,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='3.7';
+const APP_VERSION='3.8';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
