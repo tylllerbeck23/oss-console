@@ -61,7 +61,12 @@ h2{font:800 clamp(26px,4vw,38px)/1.1 var(--sans);letter-spacing:-.3px;margin:8px
 .pc li:before{content:"▸";position:absolute;left:4px;color:var(--accent)}
 .pc .buy{margin-top:auto}
 .pc .buy .btn{width:100%;text-align:center}
+.buyflow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.bf{display:flex;gap:11px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 15px}
+.bf .bfn{flex:none;font:800 12px var(--mono);color:#06121c;background:var(--accent);width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.bf b{font:700 14px var(--sans);display:block}.bf span{color:var(--dim);font-size:12.5px}
 .note{color:var(--faint);font-size:13px;margin-top:18px;text-align:center}
+@media(max-width:780px){.buyflow{grid-template-columns:1fr}}
 .cap{background:var(--panel2);border:1px dashed var(--line);border-radius:8px;padding:18px 22px;margin-top:18px;color:var(--dim);font-size:14px}
 .cap b{color:var(--ink)}
 /* steps */
@@ -157,7 +162,12 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
     </div>
   </div>
   <div class="cap"><b>Civil Air Patrol edition</b> is not sold here — it’s provisioned directly with issued keys.</div>
-  <div class="note">Prices in USD. After checkout you’ll receive your license key by email. Questions? <a href="#" id="contact" style="color:var(--accent)">Contact us</a>.</div>
+  <div class="buyflow">
+    <div class="bf"><span class="bfn">1</span><div><b>Buy securely</b><span>Checkout by card — your license key is emailed instantly.</span></div></div>
+    <div class="bf"><span class="bfn">2</span><div><b>Open the app</b><span>Tap “Launch app” and choose your edition.</span></div></div>
+    <div class="bf"><span class="bfn">3</span><div><b>Paste your key</b><span>Enter it once — activates on that device, ready offline.</span></div></div>
+  </div>
+  <div class="note">🔒 Secure checkout · prices in USD · license key emailed on purchase. Questions? <a href="#" id="contact" style="color:var(--accent)">Contact us</a>.</div>
 </div></section>
 
 <section id="faq"><div class="wrap">
@@ -182,14 +192,15 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
    Easiest: create products on Lemon Squeezy or Gumroad (handles payment, tax &
    emails the buyer a license key), then drop the checkout URLs below. ============ */
 var CHECKOUT = {
-  fish: "",   // e.g. "https://YOURSTORE.lemonsqueezy.com/buy/XXXXXXXX"
-  sar:  "",   // e.g. "https://YOURSTORE.lemonsqueezy.com/buy/YYYYYYYY"
-  contact: "mailto:you@example.com?subject=OSS%20Console"
+  // NOTE: these are SANDBOX (test) checkout links — swap for live URLs before launch.
+  fish: "https://link.sandbox-payments-checkout.com/xUYZUb",
+  sar:  "https://link.sandbox-payments-checkout.com/eLkuGa",
+  contact: "mailto:[your email]?subject=OSS%20Console"
 };
 function wire(id,key){ var el=document.getElementById(id); if(!el) return;
-  el.addEventListener('click',function(e){ var url=CHECKOUT[key];
-    if(!url){ e.preventDefault(); alert('Checkout link not set yet.\n\nAdd your Lemon Squeezy / Gumroad URL in landing.html (CHECKOUT object) to start taking payments.'); return; }
-    el.setAttribute('href',url); });
+  var url=CHECKOUT[key];
+  if(url){ el.setAttribute('href',url); el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); }
+  else el.addEventListener('click',function(e){ e.preventDefault(); alert('Checkout link not set yet — add it in landing.html (CHECKOUT object).'); });
 }
 wire('buy-fish','fish'); wire('buy-sar','sar');
 var c=document.getElementById('contact'); if(c) c.setAttribute('href',CHECKOUT.contact);
