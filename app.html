@@ -348,6 +348,19 @@ body.popout #app{display:block}
 @media (max-width:760px){ .anno-body{grid-template-columns:1fr} .anno-side{border-left:none;border-top:1px solid var(--line)} .ds-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))} }
 
 .conn-foot{text-align:center;margin-top:18px;font-size:11px;color:var(--faint);letter-spacing:.5px}
+.regs{margin-top:4px}
+.regs details{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--panel2);overflow:hidden}
+.regs summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:700;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:9px}
+.regs summary::-webkit-details-marker{display:none}
+.regs summary:after{content:"+";margin-left:auto;color:var(--brand);font-weight:800;font-size:17px;line-height:1}
+.regs details[open] summary:after{content:"–"}
+.regs .rb{padding:2px 15px 14px;font-size:13px;color:var(--ink2);line-height:1.62}
+.regs .rb ul{margin:2px 0 0;padding-left:18px}
+.regs .rb li{margin:5px 0}
+.regs .rb b{color:var(--ink)}
+.regs .lim{display:inline-block;font-family:var(--mono);font-weight:700;color:var(--brand);background:var(--brandlt);border:1px solid #bfe3ec;border-radius:4px;padding:0 6px;font-size:12px}
+.regs-disc{font-size:11.5px;color:var(--faint);margin-top:8px;line-height:1.55}
+.regs-disc a{color:var(--brand)}
 #update-bar{position:fixed;top:0;left:0;right:0;z-index:3000;display:none;align-items:center;justify-content:center;gap:12px;background:var(--brand);color:#fff;padding:9px 14px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
 #update-bar .btn{background:#fff;color:var(--brand);border-color:#fff;font-weight:700}
 /* first-run onboarding */
@@ -791,6 +804,47 @@ body.popout #app{display:block}
       <button class="btn sm" id="logo-reset">Reset</button>
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <div class="hd"><span class="n">⚖</span> Regulations &amp; compliance <span class="badge" style="margin-left:8px;font:700 9px var(--mono);letter-spacing:.5px;padding:2px 6px;border-radius:3px;background:var(--brandlt);color:var(--brand);border:1px solid #bfe3ec">U.S. · FAA</span></div>
+      <div class="sec regs">
+        <p class="note" style="margin:0 0 12px">Quick pre-flight reference for U.S. drone operations. Tap a section to expand.</p>
+
+        <details open><summary>✅ Before you fly (Part 107)</summary><div class="rb"><ul>
+          <li><b>Remote Pilot Certificate</b> — required for any <b>business use</b>. Spotting fish for a charter or commercial catch, or paid/again-organized SAR, is commercial → you need Part 107. (Pure hobby flying uses the free <b>TRUST</b> test instead.)</li>
+          <li><b>Register your drone</b> (250&nbsp;g–55&nbsp;lb): $5 at FAA DroneZone, valid 3&nbsp;years, mark the aircraft with the registration number. Mavic 3T &amp; Matrice 4T both must be registered.</li>
+          <li><b>Remote ID</b> — your drone must broadcast <b>Standard Remote ID</b> (DJI models do) or carry a broadcast module.</li>
+        </ul></div></details>
+
+        <details><summary>🛩️ Flight limits</summary><div class="rb"><ul>
+          <li>Altitude <span class="lim">≤ 400 ft AGL</span> — or within 400&nbsp;ft of a structure.</li>
+          <li>Groundspeed <span class="lim">≤ 100 mph</span> (87&nbsp;kn).</li>
+          <li><b>Visual line of sight</b> at all times — beyond-VLOS needs a waiver.</li>
+          <li><b>Yield right-of-way to all manned aircraft.</b> (See the live ADS-B traffic layer on the map.)</li>
+          <li>Day or night OK <b>with anti-collision lighting</b> visible 3&nbsp;sm at night.</li>
+          <li>One aircraft per remote pilot unless waived.</li>
+        </ul></div></details>
+
+        <details><summary>🗺️ Airspace</summary><div class="rb"><ul>
+          <li><b>Class G (uncontrolled):</b> OK up to 400&nbsp;ft, no authorization — most open water &amp; rural coast.</li>
+          <li><b>Controlled (B/C/D / surface-E):</b> get authorization via <b>LAANC</b> (instant) or FAA DroneZone <i>before</i> flying.</li>
+          <li>Check <b>TFRs</b>, stadiums, and security-sensitive areas in the <b>B4UFLY</b> app. Never near airports without authorization.</li>
+        </ul></div></details>
+
+        <details><summary>🌊 Over-water &amp; offshore</summary><div class="rb"><ul>
+          <li><b>VLOS is the hard limit offshore</b> — open water gives no visual references; keep the aircraft in sight and mind the marine haze layer.</li>
+          <li>Plan battery + <b>return-to-home</b> with margin — a ditch over water is a total loss. Watch wind and your vessel's drift.</li>
+          <li>Deconflict with other spotter planes, helicopters, and Coast Guard aircraft.</li>
+        </ul></div></details>
+
+        <details><summary>🛟 SAR &amp; public-safety ops</summary><div class="rb"><ul>
+          <li>Government/organized SAR may operate under a <b>COA</b> or as <b>public aircraft operations</b> — coordinate with the controlling agency and the Incident Commander.</li>
+          <li><b>CAP</b> missions fly under Air Force authorization — follow your wing's procedures and mission release.</li>
+          <li>Maintain comms and <b>altitude separation</b> from manned SAR assets.</li>
+        </ul></div></details>
+
+        <p class="regs-disc">⚠️ Quick reference only — <b>not legal advice</b>, and rules change. Verify current requirements before every operation: <a href="https://www.faa.gov/uas" target="_blank" rel="noopener">faa.gov/uas</a> · <a href="https://faadronezone-access.faa.gov" target="_blank" rel="noopener">FAA&nbsp;DroneZone</a> · B4UFLY app.</p>
+      </div>
     </div>
     <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><a id="foot-ops" href="admin.html" style="display:none"> · ⚙ Operator console</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
