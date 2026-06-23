@@ -490,6 +490,13 @@ body.popout #app{display:block}
 .elt-fix{font:800 9px/1 var(--mono);color:#fff;background:#dc2626;padding:3px 6px;border-radius:4px;border:2px solid #fff;white-space:nowrap}
 .elt-chip{display:inline-block;font:700 11px var(--mono);color:#6d28d9;background:#f3eefe;border:1px solid #ddd0fb;border-radius:14px;padding:3px 9px;margin:2px 0}
 .elt-chip b{cursor:pointer;color:#a78bda;margin-left:3px}
+.obj-pin{font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+#steer-bar{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:520;display:flex;align-items:center;gap:8px;background:rgba(8,20,30,.92);color:#eaf6fb;border:1px solid #1d4b5e;border-radius:30px;padding:7px 9px 7px 16px;box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(4px)}
+#steer-info{font:700 13px var(--mono);letter-spacing:.3px;white-space:nowrap}
+#steer-info b{color:#7fe0a0}
+#steer-bar .btn{padding:4px 10px;background:#103040;border:1px solid #1d4b5e;color:#cfe7ef}
+#steer-bar .btn:hover{background:#15455a}
+@media(max-width:640px){#steer-bar{top:8px;width:max-content;max-width:94vw}#steer-info{font-size:11px;white-space:normal}}
 /* ===== Comms center ===== */
 #comms-center{position:fixed;top:58px;right:0;width:362px;max-width:94vw;height:calc(100vh - 58px);height:calc(100dvh - 58px);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 34px rgba(16,42,66,.14);z-index:1500;display:flex;flex-direction:column;transition:transform .25s}
 #comms-center.hidden{transform:translateX(105%)}
@@ -766,7 +773,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.0</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.1</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -780,6 +787,12 @@ body.popout #app{display:block}
         <button class="btn sm on" id="mt-heat">🔥 Hotspots</button>
         <button class="btn sm" id="mt-fit">⤢ Fit Spots</button>
         <button class="btn sm" id="mt-grid" title="GARS grid (SAR/CAP tasking)">▦ Grid</button>
+        <button class="btn sm" id="mt-steer" title="Direct crews to a point">🎯 Steer</button>
+      </div>
+      <div id="steer-bar" style="display:none">
+        <span id="steer-info">🎯</span>
+        <button class="btn sm" id="steer-relay" title="Copy steering for radio relay">📋 Relay</button>
+        <button class="btn sm" id="steer-clear" title="Clear objective">✕</button>
       </div>
       <div class="map-badge" id="map-badge">—</div>
       <div class="crosshair-hint" id="cross-hint"></div>
@@ -986,7 +999,7 @@ body.popout #app{display:block}
     <div class="log-wrap">
       <div class="log-head">
         <div>
-          <h2>Fish Logbook &amp; Hotspot History</h2>
+          <h2 id="log-title">Fish Logbook &amp; Hotspot History</h2>
           <div class="log-stat" id="log-stat">No spots yet</div>
         </div>
         <div class="log-actions">
@@ -1288,7 +1301,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='3.0';
+const APP_VERSION='3.1';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1359,6 +1372,7 @@ const state = {
   alt:100, spd:8, spacing:144, heading:0, searchRadius:3,
   airspace:[], env:'maritime', msa:200,   // SAR airspace zones, environment, min safe altitude (ft)
   gridOn:false, elt:[],                    // GARS grid overlay · ELT direction-finding bearings
+  objective:null,                          // "direct crews" live steering objective
   lkp:null, datum:null, searchCenter:null, // SAR drift datum
   comms: lsGet('oss_comms','[]') || [],   // transmission log
   waypoints:[],                    // generated mission [{lat,lng}]
@@ -1451,6 +1465,7 @@ function applyProfile(ed){
   t('cardlog-title','Catch Logbook → Google Sheets','Contact Log → Google Sheets');
   t('hd-det','Fish Detections','Contacts');
   t('hd-cond','Trip Conditions','On-Scene Conditions');
+  t('log-title','Fish Logbook & Hotspot History','Contact Log & Search History');
   const cb=$('cardlog-body'); if(cb) cb.innerHTML = sar
     ? 'Every contact you mark is saved on this device and plotted on the hotspot map (LOGBOOK tab). Optionally mirror each one into a <b>Google Sheet</b> so your whole team / mission base shares one running log.'
     : 'Every fish you spot is saved on this device and plotted as a hotspot heatmap (LOGBOOK tab). Optionally mirror every spot into a <b>Google Sheet</b> so your whole crew shares one running history of where fish have been found.';
@@ -1514,7 +1529,9 @@ function runPopout(){
     esriLayer().addTo(m);
     let dm=null;
     if(bc) bc.onmessage=(e)=>{ const d=e.data; if(d.type==='pos'&&d.lat){ if(!dm){dm=L.marker([d.lat,d.lng]).addTo(m);} dm.setLatLng([d.lat,d.lng]); }
-      if(d.type==='det'){ L.circleMarker([d.lat,d.lng],{radius:7,color:d.game?'#ea580c':'#e0a020',fillOpacity:.8}).addTo(m); } };
+      if(d.type==='det'){ L.circleMarker([d.lat,d.lng],{radius:7,color:d.game?'#ea580c':'#e0a020',fillOpacity:.8}).addTo(m); }
+      if(d.type==='obj'){ if(window._objM) m.removeLayer(window._objM); window._objM=L.marker([d.lat,d.lng],{icon:L.divIcon({className:'',html:'<div style="font-size:22px">🎯</div>',iconSize:[26,26],iconAnchor:[13,13]})}).addTo(m); m.panTo([d.lat,d.lng]); }
+      if(d.type==='objclear'){ if(window._objM){ m.removeLayer(window._objM); window._objM=null; } } };
   }
 }
 
@@ -1547,6 +1564,8 @@ function ensureMap(){
   state.layers.air  = L.layerGroup().addTo(m);
   state.layers.grid = L.layerGroup().addTo(m);
   state.layers.elt  = L.layerGroup().addTo(m);
+  state.layers.obj  = L.layerGroup().addTo(m);
+  if(state.objective) drawObjective();
   if(state.airspace&&state.airspace.length) drawAirspace();
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
   m.on('click', onMapClick);
@@ -1595,6 +1614,7 @@ function onMapClick(e){
   if(state.setLkpMode){ state.lkp={lat,lng}; const i=$('d-lkp'); if(i) i.value=lat.toFixed(4)+', '+lng.toFixed(4); state.setLkpMode=false; endMapMode(); drawDatum(); toast('LKP set — Compute Datum'); return; }
   if(state.setAirMode){ addAirspace(lat,lng); state.setAirMode=false; endMapMode(); toast('Airspace zone placed'); return; }
   if(state.setEltMode){ state.elt.push({lat,lng,brg:state.eltPendBrg||0}); state.setEltMode=false; endMapMode(); drawElt(); renderEltList(); toast('Bearing added'); return; }
+  if(state.setSteerMode){ state.setSteerMode=false; endMapMode(); setObjective(lat,lng); return; }
   if(state.drawing){ state.area.push({lat,lng}); drawArea(); return; }
   if(state.markMode){ openMark(lat,lng); state.markMode=false; endMapMode(); return; }
 }
@@ -2027,6 +2047,34 @@ function renderEltList(){ const el=$('elt-list'); if(!el) return;
   if(fx) fx.innerHTML = f ? `<b style="color:#dc2626">⊗ FIX</b> ${f.lat.toFixed(4)}, ${f.lng.toFixed(4)} · GARS <b>${toGARS(f.lat,f.lng)}</b> · ±${f.spreadNm.toFixed(1)} NM (${f.n} cut${f.n>1?'s':''})` : (state.elt.length>=2?'Bearings don’t cross ahead — recheck headings.':'');
 }
 function clearElt(){ state.elt=[]; if(state.layers.elt) state.layers.elt.clearLayers(); renderEltList(); }
+
+/* ============================================================================
+   DIRECT CREWS — designate a live objective; show steering (bearing/dist/grid)
+   from the current position, drawn on the map and broadcast to popout screens.
+   ============================================================================ */
+function bearingTo(a,b){ const r=Math.PI/180, y=Math.sin((b.lng-a.lng)*r)*Math.cos(b.lat*r), x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lng-a.lng)*r); return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+function armSteer(){ state.setSteerMode=true; const h=$('cross-hint'); if(h){ h.textContent='Tap the map to set the objective (direct crews here)'; h.style.display='block'; } if(state.map) state.map.getContainer().style.cursor='crosshair'; }
+function setObjective(lat,lng,label){ state.objective={lat,lng,label:label||''}; drawObjective(); updateSteering();
+  const bar=$('steer-bar'); if(bar) bar.style.display='flex';
+  if(typeof bc!=='undefined'&&bc){ try{ bc.postMessage({type:'obj',lat,lng}); }catch(e){} }
+  hubLog&&hubLog('ok','Objective set — directing crews · '+toGARS(lat,lng)); toast('Objective set — crews directed'); }
+function drawObjective(){ const g=state.layers&&state.layers.obj; if(!g) return; g.clearLayers(); const o=state.objective; if(!o) return;
+  const from=vesselPoint();
+  if(from) L.polyline([[from.lat,from.lng],[o.lat,o.lng]],{color:'#0e7490',weight:2.5,dashArray:'2,7',opacity:.9}).addTo(g);
+  L.marker([o.lat,o.lng],{icon:L.divIcon({className:'',html:'<div class="obj-pin">🎯</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(g).bindPopup('OBJECTIVE'+(o.label?' · '+o.label:'')+'<br>'+toMGRS(o.lat,o.lng,true)+'<br>GARS '+toGARS(o.lat,o.lng)); }
+function updateSteering(){ const bar=$('steer-bar'), info=$('steer-info'); if(!bar||!info) return;
+  const o=state.objective; if(!o){ bar.style.display='none'; return; }
+  bar.style.display='flex'; const from=vesselPoint();
+  if(from){ const dNm=haversine(from,o)/NM_M, brg=Math.round(bearingTo(from,o));
+    info.innerHTML=`🎯 STEER <b>${brg}°</b> · <b>${dNm.toFixed(2)} NM</b> · GARS <b>${toGARS(o.lat,o.lng)}</b>`; }
+  else info.innerHTML=`🎯 OBJECTIVE <b>${o.lat.toFixed(4)}, ${o.lng.toFixed(4)}</b> · GARS <b>${toGARS(o.lat,o.lng)}</b>`; }
+function relayObjective(){ const o=state.objective; if(!o){ toast('Set an objective first'); return; }
+  const from=vesselPoint(); const steer=from?`STEER ${Math.round(bearingTo(from,o))}° · ${(haversine(from,o)/NM_M).toFixed(2)} NM\n`:'';
+  const msg=`DIRECT CREWS — ${curProfile().name}\n${steer}POS  ${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}\nMGRS ${toMGRS(o.lat,o.lng,true)}\nGARS ${toGARS(o.lat,o.lng)}`;
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(()=>toast('📋 Steering copied — relay to crews')).catch(()=>prompt('Copy steering:',msg));
+  else prompt('Copy steering:',msg); }
+function clearObjective(){ state.objective=null; if(state.layers.obj) state.layers.obj.clearLayers(); const bar=$('steer-bar'); if(bar) bar.style.display='none'; if(typeof bc!=='undefined'&&bc){ try{ bc.postMessage({type:'objclear'}); }catch(e){} } }
+function directTo(id){ const d=state.detections.find(x=>x.id===id); if(!d) return; setObjective(d.lat,d.lng,d.species); setView('operate'); if(state.map) state.map.panTo([d.lat,d.lng]); }
 function generatePath(){
   cancelSim();
   let wp=[], usedArea=null;
@@ -2475,7 +2523,7 @@ function renderDetections(){
     list.querySelectorAll('[data-del]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); deleteDetection(b.dataset.del); }); }
   const g=state.layers&&state.layers.det; if(g){ g.clearLayers();
     state.detections.forEach(d=>{ L.circleMarker([d.lat,d.lng],{radius:8,color:d.game?'#ea580c':'#c2700a',fillColor:d.game?'#ea580c':'#e0a020',fillOpacity:.75,weight:2}).addTo(g)
-      .bindPopup(`<b>${d.species}</b>${d.game?' 🎯':''}<br>${cUnit(d.count)} · ${Math.round(d.conf||0)}% conf${d.note?'<br><i>'+d.note+'</i>':''}<br><span style="font:600 10px monospace">${toMGRS(d.lat,d.lng,true)}</span><br><button onclick="relayContact('${d.id}')" style="margin-top:5px;font-size:11px;padding:3px 9px;border:none;border-radius:6px;background:var(--brand,#c01f2f);color:#fff;cursor:pointer">📋 Relay</button>`); }); }
+      .bindPopup(`<b>${d.species}</b>${d.game?' 🎯':''}<br>${cUnit(d.count)} · ${Math.round(d.conf||0)}% conf${d.note?'<br><i>'+d.note+'</i>':''}<br><span style="font:600 10px monospace">${toMGRS(d.lat,d.lng,true)}</span><br><button onclick="relayContact('${d.id}')" style="margin-top:5px;font-size:11px;padding:3px 9px;border:none;border-radius:6px;background:var(--brand,#c01f2f);color:#fff;cursor:pointer">📋 Relay</button> <button onclick="directTo('${d.id}')" style="margin-top:5px;font-size:11px;padding:3px 9px;border:none;border-radius:6px;background:#0e7490;color:#fff;cursor:pointer">🎯 Direct crews</button>`); }); }
 }
 
 /* ============================================================================
@@ -2517,13 +2565,16 @@ function logFiltered(){
 function renderLogbook(){
   const wrap=$('log-table'); if(!wrap) return;
   const total=state.detections.length, games=state.detections.filter(d=>d.game).length, species=new Set(state.detections.map(d=>d.species)).size;
-  if($('log-stat')) $('log-stat').innerHTML=`<b>${total}</b> total spots · <b>${games}</b> game-fish · <b>${species}</b> species`;
+  if($('log-stat')) $('log-stat').innerHTML = EDITION==='fish'
+    ? `<b>${total}</b> total spots · <b>${games}</b> game-fish · <b>${species}</b> species`
+    : `<b>${total}</b> contacts · <b>${species}</b> types`;
   const sel=$('log-filter');
   if(sel && sel.dataset.built!=='1'){ sel.innerHTML='<option value="all">All</option>'+(EDITION==='fish'?'<option value="game">Game fish only</option><option value="bait">Baitfish only</option>':'')+TARGETS.map(f=>`<option value="${f.n}">${f.n}</option>`).join(''); sel.dataset.built='1'; sel.value=state.logFilter; }
   const rows=logFiltered().slice().reverse();
-  wrap.innerHTML = rows.length ? `<table class="lbt"><thead><tr><th>When</th><th>Species</th><th>Count</th><th>Conf</th><th>Location</th><th></th></tr></thead><tbody>`+
-    rows.map(d=>`<tr data-id="${d.id}"><td>${new Date(d.t).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${d.species}${d.game?' 🎯':''}</td><td>${d.count}</td><td>${Math.round(d.conf||0)}%</td><td>${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</td><td style="text-align:right"><button class="det-x" data-del="${d.id}" title="Delete">✕</button></td></tr>`).join('')+
-    `</tbody></table>` : '<div class="note" style="padding:26px;text-align:center">No spots logged yet. Mark fish on the OPERATE map (or wire the AI feed) and they’ll build your hotspot history here and on the map.</div>';
+  const isFish=EDITION==='fish';
+  wrap.innerHTML = rows.length ? `<table class="lbt"><thead><tr><th>When</th><th>${isFish?'Species':'Type'}</th><th>Count</th><th>Conf</th><th>${isFish?'Location':'Grid (MGRS)'}</th><th></th></tr></thead><tbody>`+
+    rows.map(d=>`<tr data-id="${d.id}"><td>${new Date(d.t).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${d.species}${d.game?' 🎯':''}</td><td>${d.count}</td><td>${Math.round(d.conf||0)}%</td><td>${isFish?d.lat.toFixed(4)+', '+d.lng.toFixed(4):toMGRS(d.lat,d.lng,true)}</td><td style="text-align:right"><button class="det-x" data-del="${d.id}" title="Delete">✕</button></td></tr>`).join('')+
+    `</tbody></table>` : `<div class="note" style="padding:26px;text-align:center">${isFish?'No spots logged yet. Mark fish on the OPERATE map (or wire the AI feed) and they’ll build your hotspot history here and on the map.':'No contacts logged yet. Mark contacts on the OPERATE map (or via AI/relay) and they build your search history here and on the map.'}</div>`;
   wrap.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>{ const d=state.detections.find(x=>x.id===tr.dataset.id); if(d){ setView('operate'); state.heatOn=true; updateHeat(); state.map.setView([d.lat,d.lng],15);} });
   wrap.querySelectorAll('[data-del]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); deleteDetection(b.dataset.del); });
   renderBite(); renderForecast();
@@ -2541,10 +2592,10 @@ function renderBite(){
   const top=Object.entries(sp).sort((a,b)=>b[1]-a[1]).slice(0,6); const smx=Math.max(1,...top.map(t=>t[1]));
   const fmtH=h=>{ const ap=h<12?'a':'p'; const hr=h%12||12; return hr+ap; };
   el.innerHTML=`
-    <div class="bite-card"><h5>Best bite times — by hour (peak ${fmtH(peak)})</h5>
+    <div class="bite-card"><h5>${EDITION==='fish'?'Best bite times':'Activity'} — by hour (peak ${fmtH(peak)})</h5>
       <div class="bars">${bars}</div>
       <div class="bars-x"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div></div>
-    <div class="bite-card"><h5>Top species</h5><div class="spx">${
+    <div class="bite-card"><h5>${EDITION==='fish'?'Top species':'Top types'}</h5><div class="spx">${
       top.map(([n,c])=>`<div class="spx-row"><span class="nm">${n}</span><span class="bb"><i style="width:${Math.round(c/smx*100)}%"></i></span><span class="ct">${c}</span></div>`).join('')
     }</div></div>`;
 }
@@ -2643,12 +2694,12 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px} th,td{t
 th{color:#5f7180;font-size:11px;text-transform:uppercase;letter-spacing:.4px} ul{columns:2;font-size:13px}
 @media print{button{display:none}} button{background:#0e7490;color:#fff;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px}</style></head>
 <body><button onclick="print()">Print / Save PDF</button>
-<h1>Ocean Surveillance — Trip Report</h1>
+<h1>${curProfile().org.replace(/&amp;/g,'&')} — ${EDITION==='fish'?'Trip':'Mission'} Report</h1>
 <div class="sub">${now.toLocaleString()} · ${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</div>
 <div class="kpis">
   <div class="kpi"><b>${ds.length}</b><span>Contacts</span></div>
-  <div class="kpi"><b>${ds.filter(d=>d.game).length}</b><span>Game fish</span></div>
-  <div class="kpi"><b>${Object.keys(sp).length}</b><span>Species</span></div>
+  ${EDITION==='fish'?`<div class="kpi"><b>${ds.filter(d=>d.game).length}</b><span>Game fish</span></div>`:''}
+  <div class="kpi"><b>${Object.keys(sp).length}</b><span>${EDITION==='fish'?'Species':'Types'}</span></div>
   <div class="kpi"><b>${ds.length?fmtH(peak):'—'}</b><span>Peak hour</span></div>
   <div class="kpi"><b>${m.name} ${m.illum}%</b><span>Moon</span></div>
   <div class="kpi"><b>${s.sunrise} / ${s.sunset}</b><span>Sun</span></div>
@@ -3117,6 +3168,7 @@ function updateHealth(){
   const setC=(id,on)=>{ const e=$(id); if(e) e.classList.toggle('on',!!on); };
   setC('opc-feed',h.feedLive); setC('opc-ai',aiOn); setC('opc-gps',gps);
   const ct=$('opc-ct'); if(ct){ const n=state.detections.length, w=EDITION==='fish'?'spot':'contact'; ct.textContent=n+' '+w+(n===1?'':'s'); }
+  if(state.objective) updateSteering();
   if(state.view==='hub') renderHub();
 }
 function fmtClock(ms){ let s=Math.floor(ms/1000); const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); s-=m*60; const p=n=>(''+n).padStart(2,'0'); return (h?p(h)+':':'')+p(m)+':'+p(s); }
@@ -3479,6 +3531,9 @@ function initApp(){
   $('mt-heat').onclick=()=>{ state.heatOn=!state.heatOn; $('mt-heat').classList.toggle('on',state.heatOn); updateHeat(); };
   $('mt-fit').onclick=()=>fitAllDetections();
   $('mt-grid').onclick=()=>toggleGrid();
+  $('mt-steer').onclick=()=>armSteer();
+  $('steer-relay').onclick=()=>relayObjective();
+  $('steer-clear').onclick=()=>clearObjective();
 
   // notification center
   $('btn-bell').onclick=()=>toggleNotif();
