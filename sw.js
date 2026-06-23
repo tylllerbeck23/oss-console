@@ -1,7 +1,7 @@
 /* OSS Console service worker — offline app shell.
    Network-first for the app HTML (so it never serves a stale build), cache-first
    for libraries and already-viewed map tiles (so the chart works offline at sea). */
-const C = 'oss-v21';
+const C = 'oss-v22';
 const SHELL = [
   './', './index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -34,7 +34,7 @@ self.addEventListener('fetch', e => {
   // everything else: cache-first, fill cache from network (libs + viewed tiles)
   e.respondWith(
     caches.match(r).then(m => m || fetch(r).then(res => {
-      if (res.ok && (url.origin === location.origin || /unpkg|jsdelivr|arcgisonline/.test(url.host))) {
+      if (res.ok && (url.origin === location.origin || /unpkg|jsdelivr|arcgisonline|fonts\.googleapis|fonts\.gstatic/.test(url.host))) {
         const cp = res.clone(); caches.open(C).then(c => c.put(r, cp));
       }
       return res;
