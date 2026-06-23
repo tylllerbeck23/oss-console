@@ -192,15 +192,15 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
    Easiest: create products on Lemon Squeezy or Gumroad (handles payment, tax &
    emails the buyer a license key), then drop the checkout URLs below. ============ */
 var CHECKOUT = {
-  // NOTE: these are SANDBOX (test) checkout links — swap for live URLs before launch.
-  fish: "https://link.sandbox-payments-checkout.com/xUYZUb",
-  sar:  "https://link.sandbox-payments-checkout.com/eLkuGa",
+  // Paste your Stripe Payment Link URLs here, e.g. "https://buy.stripe.com/xxxxxxxx"
+  fish: "",
+  sar:  "",
   contact: "mailto:[your email]?subject=OSS%20Console"
 };
 function wire(id,key){ var el=document.getElementById(id); if(!el) return;
   var url=CHECKOUT[key];
   if(url){ el.setAttribute('href',url); el.setAttribute('target','_blank'); el.setAttribute('rel','noopener'); }
-  else el.addEventListener('click',function(e){ e.preventDefault(); alert('Checkout link not set yet — add it in landing.html (CHECKOUT object).'); });
+  else el.addEventListener('click',function(e){ e.preventDefault(); alert('Checkout is opening soon — thanks for your interest! Reach out and we’ll get you set up.'); });
 }
 wire('buy-fish','fish'); wire('buy-sar','sar');
 var c=document.getElementById('contact'); if(c) c.setAttribute('href',CHECKOUT.contact);
