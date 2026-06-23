@@ -2,7 +2,7 @@
   "name": "OSS Console — Ocean Surveillance",
   "short_name": "OSS Console",
   "description": "Aerial fish-spotting drone console — live feed, AI vision, mission planning, hotspot logbook.",
-  "start_url": "./",
+  "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
