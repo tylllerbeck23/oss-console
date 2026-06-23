@@ -512,6 +512,9 @@ body.popout #app{display:block}
 .air-row .air-dot{width:9px;height:9px;border-radius:50%;flex:none}
 .air-row .btn{margin-left:auto;padding:1px 7px}
 .air-tag{color:#fff;font:800 10px/1 var(--mono);padding:2px 4px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);text-align:center}
+.adsb-ic{display:flex;align-items:center;justify-content:center;width:26px;height:26px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+.adsb-lab{font:700 9px/1.1 var(--mono);color:#fff;background:rgba(14,42,66,.82);padding:2px 4px;border-radius:3px;white-space:nowrap;letter-spacing:.3px}
+.adsb-lab i{font-style:normal;color:#9fd6e6;margin-left:3px}
 .grid-lab{font:700 9px/1 var(--mono);color:#0a2c70;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap;transform:translateY(1px)}
 .elt-tag{font:700 9px/1 var(--mono);color:#fff;background:#7c3aed;padding:2px 5px;border-radius:4px;border:1.5px solid #fff;white-space:nowrap}
 .elt-fix{font:800 9px/1 var(--mono);color:#fff;background:#dc2626;padding:3px 6px;border-radius:4px;border:2px solid #fff;white-space:nowrap}
@@ -861,6 +864,7 @@ body.popout #app{display:block}
         <button class="btn sm" id="mt-fit">⤢ Fit Spots</button>
         <button class="btn sm" id="mt-grid" title="GARS grid (SAR/CAP tasking)">▦ Grid</button>
         <button class="btn sm" id="mt-steer" title="Direct crews to a point">🎯 Steer</button>
+        <button class="btn sm" id="mt-adsb" title="Live manned-aircraft traffic near your vessel (ADS-B via airplanes.live) — deconflict per Part 107">✈ Traffic</button>
       </div>
       <div id="steer-bar" style="display:none">
         <span id="steer-info">🎯</span>
@@ -1385,7 +1389,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.2';
+const APP_VERSION='4.3';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1663,6 +1667,8 @@ function ensureMap(){
   state.layers.grid = L.layerGroup().addTo(m);
   state.layers.elt  = L.layerGroup().addTo(m);
   state.layers.obj  = L.layerGroup().addTo(m);
+  state.layers.adsb = L.layerGroup().addTo(m);
+  if(state.adsbOn) fetchAdsb();
   if(state.objective) drawObjective();
   if(state.airspace&&state.airspace.length) drawAirspace();
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
@@ -1999,6 +2005,54 @@ function toGARS(lat,lng){
   const q15LonW=cellLonW+qCol*0.25, q15LatS=cellLatS+(qRow===0?0.25:0), kLon=lng-q15LonW, kLat=lat-q15LatS;
   const kCol=Math.min(2,Math.floor(kLon/(0.25/3))), kRow=2-Math.min(2,Math.floor(kLat/(0.25/3)));
   return c.band+quad+(kRow*3+kCol+1);                                          // e.g. 189LW37
+}
+/* ---------- ADS-B live air traffic (deconfliction) ----------
+   Free community feed (airplanes.live, CORS-enabled). Polls aircraft near the
+   vessel; plots them heading-aligned; low/close traffic flagged red. Yield to
+   manned aircraft (Part 107). Fails soft when offline. */
+let _adsbTimer=null;
+function toggleAdsb(){
+  state.adsbOn=!state.adsbOn;
+  const b=$('mt-adsb'); if(b) b.classList.toggle('on',state.adsbOn);
+  if(_adsbTimer){ clearInterval(_adsbTimer); _adsbTimer=null; }
+  if(state.adsbOn){ fetchAdsb(true); _adsbTimer=setInterval(()=>fetchAdsb(false), 25000); }
+  else { if(state.layers.adsb) state.layers.adsb.clearLayers(); if(b) b.textContent='✈ Traffic'; }
+}
+function planeIcon(track,color){
+  const rot=Math.round((track||0)%360);
+  return L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],html:
+    '<div class="adsb-ic"><svg viewBox="0 0 24 24" width="22" height="22" style="transform:rotate('+rot+'deg)"><path d="M12 2 L13.4 10.6 L22 14.6 L22 16.4 L13.4 13.8 L12.9 19.6 L15.4 21.2 L15.4 22.4 L12 21.4 L8.6 22.4 L8.6 21.2 L11.1 19.6 L10.6 13.8 L2 16.4 L2 14.6 L10.6 10.6 Z" fill="'+color+'" stroke="#fff" stroke-width="0.7"/></svg></div>'});
+}
+async function fetchAdsb(announce){
+  if(!state.adsbOn || !state.map) return;
+  const c = vesselPoint() || (state.map.getCenter?{lat:state.map.getCenter().lat,lng:state.map.getCenter().lng}:null);
+  if(!c){ if(announce) toast('Set your vessel first to see nearby air traffic'); return; }
+  try{
+    const r=await fetch('https://api.airplanes.live/v2/point/'+c.lat.toFixed(4)+'/'+c.lng.toFixed(4)+'/40',{headers:{'Accept':'application/json'}});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    drawAdsb((j.ac||j.aircraft||[]), c);
+  }catch(e){ if(announce) toast('Live air traffic unavailable right now (needs internet)'); }
+}
+function drawAdsb(list,c){
+  const g=state.layers&&state.layers.adsb; if(!g) return; g.clearLayers();
+  let low=0;
+  (list||[]).forEach(a=>{
+    if(typeof a.lat!=='number'||typeof a.lon!=='number') return;
+    const alt = (a.alt_baro==='ground')?0:(typeof a.alt_baro==='number'?a.alt_baro:(typeof a.alt_geom==='number'?a.alt_geom:null));
+    const lowAlt = alt!=null && alt<=2500;          // potential conflict band for a <400ft drone
+    const color = lowAlt?'#dc2626':'#0e7490';
+    const flight=((a.flight||a.r||'')+'').trim()||'—';
+    const trk = a.track!=null?a.track:(a.true_heading!=null?a.true_heading:0);
+    const altTxt = alt==null?'altitude n/a':(alt===0?'on ground':alt.toLocaleString()+' ft');
+    const spd = a.gs!=null?(' · '+Math.round(a.gs)+' kt'):'';
+    L.marker([a.lat,a.lon],{icon:planeIcon(trk,color),zIndexOffset:500}).addTo(g)
+      .bindPopup('<b>'+flight+'</b><br>'+altTxt+spd+(a.t?'<br>'+a.t:''));
+    const sub = alt==null?'':(alt===0?'GND':String(Math.round(alt/100)).padStart(3,'0'));
+    L.marker([a.lat,a.lon],{icon:L.divIcon({className:'',html:'<div class="adsb-lab">'+flight+(sub?'<i>'+sub+'</i>':'')+'</div>',iconSize:[1,1],iconAnchor:[-11,7]}),interactive:false}).addTo(g);
+    if(lowAlt) low++;
+  });
+  const b=$('mt-adsb'); if(b && state.adsbOn) b.textContent='✈ '+(list?list.length:0)+(low?(' ⚠'+low):'');
 }
 function toggleGrid(){ state.gridOn=!state.gridOn; const b=$('mt-grid'); if(b) b.classList.toggle('on',state.gridOn); if(state.gridOn) drawGrid(); else if(state.layers.grid) state.layers.grid.clearLayers(); }
 function drawGrid(){
@@ -3668,6 +3722,7 @@ function initApp(){
   $('mt-fit').onclick=()=>fitAllDetections();
   $('mt-grid').onclick=()=>toggleGrid();
   $('mt-steer').onclick=()=>armSteer();
+  $('mt-adsb').onclick=()=>toggleAdsb();
   $('steer-relay').onclick=()=>relayObjective();
   $('steer-clear').onclick=()=>clearObjective();
 
