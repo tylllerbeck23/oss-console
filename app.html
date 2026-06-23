@@ -792,7 +792,7 @@ body.popout #app{display:block}
       <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <span class="note" style="margin:0;flex-basis:100%">Replaces the emblem on the launcher, top bar &amp; splash for this edition (saved on this device). Use a square PNG/SVG for best results.</span>
     </div>
-    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
+    <div class="conn-foot"><span id="foot-name">OSS Console</span> · v<span id="app-ver">3.9</span> · <a href="#" onclick="switchEdition();return false">⇄ Switch edition</a> · <a href="#" onclick="if(confirm('Return to the edition launcher?'))switchEdition();return false">⌂ Launcher</a><a id="foot-ops" href="admin.html" style="display:none"> · ⚙ Operator console</a><br>Keyboard: <b>1–7</b> tabs · <b>M</b> mark · <b>A</b> AI · <b>G</b> generate · <b>F</b> fullscreen · <b>?</b> help</div>
   </section>
 
   <!-- ===== WORKSPACE (operate + plan share the map) ===== -->
@@ -1331,7 +1331,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.1';
+const APP_VERSION='4.2';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1530,7 +1530,8 @@ function showLicense(){
   el.style.display='flex';
   const go=()=>{ const v=$('lic-input').value;
     if(normKey(v)==='RESET'){ try{ localStorage.removeItem('oss_edition'); }catch(e){} location.href=location.pathname; return; }  // code your way out → launcher
-    if(validKey(v)){ try{localStorage.setItem(licKey(),normKey(v));}catch(e){} el.style.display='none'; startApp(); }
+    if(normKey(v)==='OPS'||normKey(v)==='ADMIN'){ location.href='admin.html'; return; }  // owner route → operator console
+    if(validKey(v)){ try{localStorage.setItem(licKey(),normKey(v)); if(keyHash(normKey(v))===MASTER_HASH) localStorage.setItem('oss_owner','1');}catch(e){} el.style.display='none'; startApp(); }
     else { $('lic-err').textContent='Invalid key. Use the key issued with your purchase — or type RESET to pick another edition.'; $('lic-input').select(); } };
   $('lic-go').onclick=go;
   const lb=$('lic-back'); if(lb) lb.onclick=(e)=>{ e.preventDefault(); try{ localStorage.removeItem('oss_edition'); }catch(e){} location.href=location.pathname; };
@@ -1538,7 +1539,7 @@ function showLicense(){
   setTimeout(()=>{ try{$('lic-input').focus();}catch(e){} },120);
 }
 function gateLicense(){
-  try{ const uk=new URLSearchParams(location.search).get('key'); if(uk && validKey(uk)) localStorage.setItem(licKey(),normKey(uk)); }catch(e){}
+  try{ const uk=new URLSearchParams(location.search).get('key'); if(uk && validKey(uk)){ localStorage.setItem(licKey(),normKey(uk)); if(keyHash(normKey(uk))===MASTER_HASH) localStorage.setItem('oss_owner','1'); } }catch(e){}
   if(licensed()) startApp(); else showLicense();
 }
 if(isPopout()){ applyProfile(currentEd()||'fish'); runPopout(); }
@@ -3685,6 +3686,7 @@ function initApp(){
   $('hub-clearlog').onclick=()=>{ state.events=[]; renderHubLog(); };
   $('hub-update').onclick=()=>checkForUpdate();
   if($('app-ver')) $('app-ver').textContent=APP_VERSION;
+  try{ if(localStorage.getItem('oss_owner')==='1'){ const fo=$('foot-ops'); if(fo) fo.style.display='inline'; } }catch(e){}
   $('tele-connect').onclick=()=>{ const u=$('tele-url').value.trim(); if(!u){toast('Enter a ws:// telemetry URL');return;} connectTeleWs(u); };
   $('tele-sim').onclick=()=>toggleTeleSim();
   $('bk-export').onclick=()=>exportAll();
