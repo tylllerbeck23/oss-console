@@ -1389,7 +1389,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.3';
+const APP_VERSION='4.4';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1668,7 +1668,6 @@ function ensureMap(){
   state.layers.elt  = L.layerGroup().addTo(m);
   state.layers.obj  = L.layerGroup().addTo(m);
   state.layers.adsb = L.layerGroup().addTo(m);
-  if(state.adsbOn) fetchAdsb();
   if(state.objective) drawObjective();
   if(state.airspace&&state.airspace.length) drawAirspace();
   if(L.control&&L.control.scale) L.control.scale({imperial:true,metric:false}).addTo(m);
@@ -1678,6 +1677,7 @@ function ensureMap(){
   if(state.home) setHomeMarker(state.home);
   renderDetections(); updateHeat();
   updateMapBadge();
+  setTimeout(applyMapDefaults,60);   // auto-enable grid + ADS-B traffic (persisted; deferred to dodge boot-time TDZ)
 }
 function updateHeat(){
   if(!state.mapReady || !L.heatLayer) return;
@@ -2013,10 +2013,17 @@ function toGARS(lat,lng){
 let _adsbTimer=null;
 function toggleAdsb(){
   state.adsbOn=!state.adsbOn;
+  try{ localStorage.setItem('oss_adsb', state.adsbOn?'1':'0'); }catch(e){}
   const b=$('mt-adsb'); if(b) b.classList.toggle('on',state.adsbOn);
   if(_adsbTimer){ clearInterval(_adsbTimer); _adsbTimer=null; }
   if(state.adsbOn){ fetchAdsb(true); _adsbTimer=setInterval(()=>fetchAdsb(false), 25000); }
   else { if(state.layers.adsb) state.layers.adsb.clearLayers(); if(b) b.textContent='✈ Traffic'; }
+}
+/* auto-enable grid + ADS-B on the map by default (each persists; user can turn either off) */
+function applyMapDefaults(){
+  if(!state.mapReady) return;
+  try{ if(localStorage.getItem('oss_grid')!=='0' && !state.gridOn){ state.gridOn=true; const b=$('mt-grid'); if(b) b.classList.add('on'); drawGrid(); } }catch(e){}
+  try{ if(localStorage.getItem('oss_adsb')!=='0' && !state.adsbOn){ state.adsbOn=true; const b=$('mt-adsb'); if(b) b.classList.add('on'); if(_adsbTimer) clearInterval(_adsbTimer); _adsbTimer=setInterval(()=>fetchAdsb(false),25000); fetchAdsb(false); } }catch(e){}
 }
 function planeIcon(track,color){
   const rot=Math.round((track||0)%360);
@@ -2054,7 +2061,7 @@ function drawAdsb(list,c){
   });
   const b=$('mt-adsb'); if(b && state.adsbOn) b.textContent='✈ '+(list?list.length:0)+(low?(' ⚠'+low):'');
 }
-function toggleGrid(){ state.gridOn=!state.gridOn; const b=$('mt-grid'); if(b) b.classList.toggle('on',state.gridOn); if(state.gridOn) drawGrid(); else if(state.layers.grid) state.layers.grid.clearLayers(); }
+function toggleGrid(){ state.gridOn=!state.gridOn; try{ localStorage.setItem('oss_grid', state.gridOn?'1':'0'); }catch(e){} const b=$('mt-grid'); if(b) b.classList.toggle('on',state.gridOn); if(state.gridOn) drawGrid(); else if(state.layers.grid) state.layers.grid.clearLayers(); }
 function drawGrid(){
   const g=state.layers&&state.layers.grid; if(!g||!state.map) return; g.clearLayers();
   const b=state.map.getBounds(), z=state.map.getZoom();
