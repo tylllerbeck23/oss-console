@@ -812,6 +812,7 @@ body.popout #app{display:block}
       <div class="hd"><span class="n">⚖</span> Regulations &amp; compliance <span class="badge" style="margin-left:8px;font:700 9px var(--mono);letter-spacing:.5px;padding:2px 6px;border-radius:3px;background:var(--brandlt);color:var(--brand);border:1px solid #bfe3ec">U.S. · FAA</span></div>
       <div class="sec regs">
         <p class="note" style="margin:0 0 12px">Quick pre-flight reference for U.S. drone operations. Tap a section to expand.</p>
+        <div class="warnbox" style="margin:0 0 12px">⚠️ <b>Fish-spotting law:</b> Federal rules (<b>50 CFR 635</b>) prohibit using aircraft — a reading that likely includes drones — to locate or catch <b>Atlantic bluefin tuna</b> without a Harpoon/Purse-Seine permit. <b>Florida</b> (FAC <b>68B-4.013</b>) bans harvesting marine fish with the aid of a <b>spotter plane</b> in state waters, which likely extends to drones. Check your <b>state &amp; target species</b> before using OSS to assist fishing. Not legal advice.</div>
 
         <details open><summary>✅ Before you fly (Part 107)</summary><div class="rb"><ul>
           <li><b>Remote Pilot Certificate</b> — required for any <b>business use</b>. Spotting fish for a charter or commercial catch, or paid/again-organized SAR, is commercial → you need Part 107. (Pure hobby flying uses the free <b>TRUST</b> test instead.)</li>
@@ -1389,7 +1390,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.4';
+const APP_VERSION='4.5';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
