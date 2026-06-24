@@ -812,7 +812,7 @@ body.popout #app{display:block}
       <div class="hd"><span class="n">⚖</span> Regulations &amp; compliance <span class="badge" style="margin-left:8px;font:700 9px var(--mono);letter-spacing:.5px;padding:2px 6px;border-radius:3px;background:var(--brandlt);color:var(--brand);border:1px solid #bfe3ec">U.S. · FAA</span></div>
       <div class="sec regs">
         <p class="note" style="margin:0 0 12px">Quick pre-flight reference for U.S. drone operations. Tap a section to expand.</p>
-        <div class="warnbox" style="margin:0 0 12px">⚠️ <b>Fish-spotting law:</b> Federal rules (<b>50 CFR 635</b>) prohibit using aircraft — a reading that likely includes drones — to locate or catch <b>Atlantic bluefin tuna</b> without a Harpoon/Purse-Seine permit. <b>Florida</b> (FAC <b>68B-4.013</b>) bans harvesting marine fish with the aid of a <b>spotter plane</b> in state waters, which likely extends to drones. Check your <b>state &amp; target species</b> before using OSS to assist fishing. Not legal advice.</div>
+        <details><summary>🎣 Fish-spotting &amp; species rules</summary><div class="rb">Some fisheries restrict aircraft/drone-assisted spotting. Federal rules (<b>50 CFR 635</b>) prohibit using aircraft — a reading that likely includes drones — to locate or catch <b>Atlantic bluefin tuna</b> without a Harpoon/Purse-Seine permit; <b>Florida</b> (FAC <b>68B-4.013</b>) bans harvesting marine fish with the aid of a <b>spotter plane</b> in state waters, likely extending to drones. Check your <b>state &amp; target species</b> before using OSS to assist fishing. Not legal advice.</div></details>
 
         <details open><summary>✅ Before you fly (Part 107)</summary><div class="rb"><ul>
           <li><b>Remote Pilot Certificate</b> — required for any <b>business use</b>. Spotting fish for a charter or commercial catch, or paid/again-organized SAR, is commercial → you need Part 107. (Pure hobby flying uses the free <b>TRUST</b> test instead.)</li>
@@ -1281,6 +1281,18 @@ body.popout #app{display:block}
       <div class="anno-side">
         <label class="fld"><span class="lab">Species for new boxes</span><select id="an-species"></select></label>
         <div class="note">Review the AI’s boxes: <b>✓ confirm</b> by saving as-is · <b>change</b> by picking a species above then clicking a box’s label · <b>circle</b> a missed school by dragging a new box · <b>✕</b> removes a wrong one. Every correction becomes training data.</div>
+        <button class="btn cyan full" id="an-ai" style="margin-top:11px">✨ Auto-label with Claude</button>
+        <div id="an-aistat" style="font-size:11.5px;margin-top:7px;min-height:15px;line-height:1.4"></div>
+        <details class="an-aicfg" id="an-aicfg" style="margin-top:6px">
+          <summary style="cursor:pointer;font-size:11px;color:var(--dim);font-weight:600">⚙ Claude API key &amp; model</summary>
+          <input id="an-aikey" type="password" placeholder="sk-ant-… (this device only)" autocomplete="off" style="margin-top:7px">
+          <select id="an-aimodel" style="margin-top:7px">
+            <option value="claude-opus-4-8">Opus 4.8 — most accurate</option>
+            <option value="claude-sonnet-4-6">Sonnet 4.6 — faster</option>
+            <option value="claude-haiku-4-5">Haiku 4.5 — fastest / cheapest</option>
+          </select>
+          <div class="note" style="margin-top:7px">Your key stays in this browser and is sent only to Anthropic to pre-label this frame. Get one at <b>console.anthropic.com</b>. You review every box before it’s saved.</div>
+        </details>
       </div>
     </div>
     <div class="modal-ft">
@@ -1390,7 +1402,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.5';
+const APP_VERSION='4.6';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -2989,6 +3001,8 @@ function openAnno(id){
   if(s.species&&s.species!=='Unlabeled'&&sel) sel.value=s.species;
   $('an-img').src=s.img;
   $('an-meta').textContent=`${s.lat?s.lat.toFixed(4)+', '+s.lng.toFixed(4):'no GPS'} · ${new Date(s.t).toLocaleString()}`;
+  try{ const k=$('an-aikey'); if(k) k.value=localStorage.getItem('oss_claude_key')||''; const mo=$('an-aimodel'); if(mo&&localStorage.getItem('oss_claude_model')) mo.value=localStorage.getItem('oss_claude_model'); }catch(e){}
+  setAiStat('');
   $('anno-modal').classList.remove('hidden');
   setTimeout(drawAnnoBoxes,30);
 }
@@ -3021,6 +3035,50 @@ async function deleteSample(){
   if(!_anno) return; if(!confirm('Delete this frame from the dataset?')) return;
   try{ await dbDel(_anno.s.id); }catch(e){}
   $('anno-modal').classList.add('hidden'); _anno=null; renderDataset();
+}
+/* ===== Claude-assisted labeling — superpowers the training flywheel =====
+   Sends the captured frame to the Anthropic API (user's own key, stored on this
+   device only) and proposes bounding boxes the human then confirms/edits/saves. */
+function setAiStat(t,cls){ const e=$('an-aistat'); if(!e) return; e.style.color={busy:'var(--dim)',ok:'var(--ok)',warn:'#9a5b08',bad:'var(--red)'}[cls]||'var(--dim)'; e.textContent=t||''; }
+async function claudeAutoLabel(){
+  if(!_anno){ return; }
+  let key=''; try{ key=(localStorage.getItem('oss_claude_key')||'').trim(); }catch(e){}
+  if(!key){ const c=$('an-aicfg'); if(c) c.open=true; const k=$('an-aikey'); if(k) k.focus(); setAiStat('Add your Anthropic API key below, then try again.','warn'); return; }
+  const model=$('an-aimodel')?$('an-aimodel').value:'claude-opus-4-8';
+  const m=(_anno.s.img||'').match(/^data:(image\/[a-z]+);base64,(.+)$/i);
+  if(!m){ setAiStat('No image available to analyze.','bad'); return; }
+  const labels=(TARGETS||[]).map(t=>t.n||t).slice(0,24).join(', ');
+  const prompt='You are pre-labeling ONE aerial drone-camera frame to build an object-detection training set. '
+    +'Find every '+missionNoun()+' or relevant target actually visible in the image. For each, give one tight bounding box. '
+    +'All coordinates are fractions of the image in [0,1]: x,y = the TOP-LEFT corner of the box; w,h = its width and height. '
+    +'Use a short label — prefer one of these when it fits: '+labels+'. If you can’t tell the exact type, use a generic label like "fish" or "contact". '
+    +'Box things you can genuinely see; do NOT box the whole frame, and return an empty list if nothing is present.';
+  setAiStat('Asking Claude to find targets…','busy'); const btn=$('an-ai'); if(btn) btn.disabled=true;
+  const body={ model:model, max_tokens:1024,
+    messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:m[1],data:m[2]}},{type:'text',text:prompt}]}],
+    output_config:{format:{type:'json_schema',schema:{type:'object',additionalProperties:false,required:['detections'],properties:{
+      detections:{type:'array',items:{type:'object',additionalProperties:false,required:['label','x','y','w','h'],properties:{
+        label:{type:'string'},x:{type:'number'},y:{type:'number'},w:{type:'number'},h:{type:'number'},confidence:{type:'number'}}}}}}}} };
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify(body)});
+    if(!r.ok){ let msg='HTTP '+r.status; try{ const e=await r.json(); if(e&&e.error&&e.error.message) msg=e.error.message; }catch(_){}
+      setAiStat('Claude error: '+msg,'bad'); if(btn) btn.disabled=false; return; }
+    const j=await r.json();
+    if(j.stop_reason==='refusal'){ setAiStat('Claude declined to label this image.','bad'); if(btn) btn.disabled=false; return; }
+    const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    let parsed; try{ parsed=JSON.parse(txt); }catch(_){ const mm=txt.match(/\{[\s\S]*\}/); parsed=mm?JSON.parse(mm[0]):{detections:[]}; }
+    let added=0;
+    ((parsed&&parsed.detections)||[]).forEach(d=>{ let x=+d.x||0,y=+d.y||0,w=+d.w||0,h=+d.h||0;
+      if(Math.max(x,y,w,h)>1.5){ x/=100; y/=100; w/=100; h/=100; }        // tolerate percent-style coords
+      x=clamp(x,0,1); y=clamp(y,0,1); w=clamp(w,0,0.999); h=clamp(h,0,0.999);
+      if(w<=0.005||h<=0.005) return; if(x+w>1)w=1-x; if(y+h>1)h=1-y;
+      _anno.boxes.push({species:((d.label||'contact')+'').slice(0,40),x:x,y:y,w:w,h:h}); added++; });
+    drawAnnoBoxes();
+    setAiStat(added?('Claude proposed '+added+' box'+(added>1?'es':'')+' — review, fix, and Save.'):'Claude found nothing to box in this frame.',added?'ok':'warn');
+  }catch(e){ setAiStat('Couldn’t reach Claude (needs internet): '+(e.message||e),'bad'); }
+  if(btn) btn.disabled=false;
 }
 
 /* ---- export a ready-to-train YOLO dataset ---- */
@@ -3843,6 +3901,9 @@ function initApp(){
   $('an-close2').onclick=()=>{ $('anno-modal').classList.add('hidden'); _anno=null; };
   $('an-save').onclick=()=>saveAnno();
   $('an-del').onclick=()=>deleteSample();
+  if($('an-ai')) $('an-ai').onclick=()=>claudeAutoLabel();
+  if($('an-aikey')) $('an-aikey').oninput=()=>{ try{ localStorage.setItem('oss_claude_key',$('an-aikey').value.trim()); }catch(e){} };
+  if($('an-aimodel')) $('an-aimodel').onchange=()=>{ try{ localStorage.setItem('oss_claude_model',$('an-aimodel').value); }catch(e){} };
   $('an-species').onchange=()=>{};
 
   // mark-fish modal
