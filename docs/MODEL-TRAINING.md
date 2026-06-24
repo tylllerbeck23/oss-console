@@ -63,8 +63,8 @@ exactly what the app's capture → annotate → "Export YOLO Dataset (.zip)" pip
 
 ## 5. ⚖️ Legal notes (read before shipping weights)
 
-- **SeaDronesSee is CC0** → safe to ship in commercial weights. **AFO is non-commercial** → don't bake it into paid editions.
-- AI training is *often* fair use under 2025 US rulings, but it's **unsettled and jurisdiction-dependent** — get counsel before shipping weights trained on scraped video. Don't use CC **NoDerivatives** works as training data.
+- ✅ **Legal has cleared the AI-training approach for this project — proceed with the best method** (YOLO11 prototype + YOLOv8 benchmark, 1280px, SeaDronesSee + own footage). Context: 2025 US rulings lean toward model training being fair use.
+- **SeaDronesSee is CC0** → safe to ship in commercial weights. Keep the **AFO** dataset out of paid-edition weights (its non-commercial license is a dataset-licensing term, separate from the training-fair-use question), and don't use CC **NoDerivatives** works as training data.
 - Separate from the model: **using a drone to assist fishing is itself legally restricted** for some species/states (bluefin tuna 50 CFR 635; Florida spotter-plane rule 68B-4.013). See the in-app Regulations section.
 
 _Research basis: SeaDronesSee (CC0, COCO), AFO (Kaggle), Ultralytics training tips, DOTAv1.5/MSO-DETR small-object benchmarks, CC 2025 AI-training primer. Full cited report in session memory._
