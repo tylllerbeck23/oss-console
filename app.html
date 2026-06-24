@@ -425,6 +425,20 @@ body.popout #app{display:block}
 .hc-s{font-size:10.5px;color:var(--faint);margin-top:4px;min-height:14px;word-break:break-all}
 .hub-logh{font-family:var(--sans);font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:9px;font-weight:700}
 .hub-log{background:#0c1620;border:1px solid var(--line2);border-radius:12px;padding:8px 0;max-height:48vh;overflow-y:auto;font-family:var(--mono)}
+.tl-card .hc-top{display:flex;align-items:center;gap:8px}
+.tl-badge{margin-left:auto;font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:2px 9px;border-radius:20px;background:var(--brandlt);color:var(--brand);border:1px solid #bfe3ec}
+.tl-stages{display:flex;gap:6px;margin:11px 0 9px}
+.tl-st{flex:1;text-align:center;font:700 10.5px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--faint);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:8px 3px}
+.tl-st b{display:block;font:800 13px var(--mono);margin-bottom:2px}
+.tl-st.on{color:#fff;background:linear-gradient(135deg,var(--brand2),var(--brand));border-color:var(--brand)}
+.tl-st.done{color:var(--ok);border-color:#bce8d6;background:#eafaf3}
+.tl-stats{display:flex;gap:9px;margin:4px 0}
+.tl-stats>div{flex:1;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:8px 3px}
+.tl-stats b{display:block;font:800 18px var(--mono);color:var(--ink)}
+.tl-stats span{font:700 9px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.tl-bar{height:8px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:9px 0 5px}
+.tl-fill{height:100%;background:linear-gradient(90deg,var(--brand),#11b07a);width:0;transition:width .45s}
+.tl-next{font-weight:600;color:var(--ink2)!important}
 .logln{display:grid;grid-template-columns:78px 56px 1fr;gap:10px;padding:4px 16px;font-size:11.5px;align-items:baseline}
 .logln .lt{color:#5d7484} .logln .lm{color:#cfe0ea;word-break:break-word}
 .logln .lv{font-weight:700;font-size:9.5px;letter-spacing:.5px;color:#7e93a1}
@@ -1203,6 +1217,29 @@ body.popout #app{display:block}
         <div class="hubcard"><div class="hc-top"><span class="hc-dot off" id="d-sheet"></span><span class="hc-title">Google Sheet</span></div><div class="hc-v" id="v-sheet">—</div><div class="hc-s" id="s-sheet"></div></div>
         <div class="hubcard"><div class="hc-top"><span class="hc-dot off" id="d-det"></span><span class="hc-title">Detections</span></div><div class="hc-v" id="v-det">—</div><div class="hc-s" id="s-det"></div></div>
       </div>
+      <div class="hubcard tl-card" style="margin-top:12px">
+        <div class="hc-top"><span class="hc-dot off" id="d-train"></span><span class="hc-title">Active-Learning Loop</span><span class="tl-badge" id="tl-stage">—</span></div>
+        <div class="tl-stages" id="tl-stages">
+          <div class="tl-st" data-s="collect"><b>1</b>Collect</div>
+          <div class="tl-st" data-s="label"><b>2</b>Label</div>
+          <div class="tl-st" data-s="train"><b>3</b>Train</div>
+          <div class="tl-st" data-s="deploy"><b>4</b>Deploy</div>
+        </div>
+        <div class="tl-stats">
+          <div><b id="tl-frames">0</b><span>frames</span></div>
+          <div><b id="tl-labeled">0</b><span>labeled</span></div>
+          <div><b id="tl-inst">0</b><span>boxes</span></div>
+          <div><b id="tl-classes">0</b><span>classes</span></div>
+        </div>
+        <div class="tl-bar"><div class="tl-fill" id="tl-fill"></div></div>
+        <div class="tl-next note" id="tl-next">—</div>
+        <div class="note" id="tl-model" style="margin-top:7px">—</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn sm cyan" id="tl-open">Open dataset →</button>
+          <button class="btn sm" id="tl-export">⤓ Export YOLO dataset</button>
+        </div>
+        <div class="note" style="margin-top:9px">⚙ <b>How training really works:</b> this device <b>collects &amp; labels</b> frames. The actual model <b>trains in the Colab notebook</b> (GPU) on your exported data — it can’t run in a phone browser. To make <b>all devices</b> learn together, sync data to the <b>Cloud Hub</b> and retrain there, then the new model ships to every device. <span id="tl-sync"></span></div>
+      </div>
       <h4 class="hub-logh">Live event log</h4>
       <div class="hub-log" id="hub-log"></div>
     </div>
@@ -1402,7 +1439,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.6';
+const APP_VERSION='4.7';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -3437,7 +3474,41 @@ function renderHub(){
   setCard('cloud', !state.apiUrl?'off':(h.hub==='ok'?'ok':h.hub==='err'?'bad':'warn'), !state.apiUrl?'Not set':(h.hub==='ok'?'Synced':h.hub==='err'?'Unreachable':'Configured'), state.apiUrl||'DATA / LAB → Cloud Data Hub');
   setCard('sheet', !state.sheetUrl?'off':'ok', state.sheetUrl?'Logging':'Not set', state.sheetUrl?'Google Sheet connected':'CONNECT → Catch Logbook');
   setCard('det', state.detections.length?'ok':'off', String(state.detections.length), 'contacts logged this device');
+  renderTrainingLoop();
   renderHubLog();
+}
+/* Active-learning loop status — makes the real collect→label→train→deploy flywheel
+   visible. There is NO in-browser detector training; training is a GPU/Colab step.
+   This panel shows dataset readiness + the next action + model status, per device. */
+let _tlLast=0;
+async function renderTrainingLoop(force){
+  if(!$('tl-frames')) return;
+  const now=Date.now(); if(!force && now-_tlLast<2500) return; _tlLast=now;
+  let rows=[]; try{ rows=await dbAll(); }catch(e){ rows=[]; }
+  const frames=rows.length;
+  const labeled=rows.filter(s=>s.boxes&&s.boxes.length).length;
+  const unlabeled=frames-labeled;
+  const inst=rows.reduce((n,s)=>n+((s.boxes&&s.boxes.length)||0),0);
+  const sp={}; rows.forEach(s=>(s.boxes||[]).forEach(b=>{ if(b.species&&b.species!=='Unlabeled') sp[b.species]=(sp[b.species]||0)+1; }));
+  const classes=Object.keys(sp).length;
+  const GATE=150;                               // labeled boxes for a first transfer-learn run (research: tens/class to start)
+  $('tl-frames').textContent=frames; $('tl-labeled').textContent=labeled; $('tl-inst').textContent=inst; $('tl-classes').textContent=classes;
+  $('tl-fill').style.width=Math.min(100,Math.round(inst/GATE*100))+'%';
+  let model=''; try{ model=localStorage.getItem('oss_model_ver')||''; }catch(e){}
+  // stage + next action
+  let stage, next;
+  if(frames===0){ stage='collect'; next='No frames yet — on OPERATE or AI LAB, capture frames (📸) or run ⚡ Auto-collect, then label them.'; }
+  else if(unlabeled>0 && inst<GATE){ stage='label'; next=unlabeled+' frame'+(unlabeled>1?'s':'')+' still need boxes. Open the dataset and label them — ✨ Auto-label with Claude makes it fast.'; }
+  else if(inst<GATE){ stage='label'; next='Keep labeling — about '+(GATE-inst)+' more boxes to your first training run.'; }
+  else if(!model){ stage='train'; next='✅ Enough to start. Export the YOLO dataset → run the Colab notebook → send me best.onnx and I’ll wire it in.'; }
+  else { stage='deploy'; next='Model '+model+' is active. Keep labeling hard cases and retrain to sharpen it — the loop never really ends.'; }
+  const order=['collect','label','train','deploy']; const ci=order.indexOf(stage);
+  document.querySelectorAll('#tl-stages .tl-st').forEach(el=>{ const i=order.indexOf(el.dataset.s); el.classList.toggle('on',i===ci); el.classList.toggle('done',i<ci); });
+  $('tl-stage').textContent={collect:'Collecting',label:'Labeling',train:'Ready to train',deploy:'Deployed'}[stage];
+  const dot=$('d-train'); if(dot) dot.className='hc-dot '+(stage==='deploy'?'ok':stage==='train'?'warn':'off');
+  $('tl-next').textContent=next;
+  $('tl-model').innerHTML = model ? ('Active model: <b>'+model+'</b>') : 'Active model: <b>none yet</b> — until you train one, the app runs the built-in surface-anomaly + generic detectors.';
+  $('tl-sync').textContent = state.apiUrl ? 'Cloud Hub is configured — data can sync across devices.' : 'No Cloud Hub set yet — use ⤓ Export / ⤒ Restore to move data between devices, or set a hub URL on the DATA / LAB tab.';
 }
 function renderHubLog(){
   const el=$('hub-log'); if(!el) return;
@@ -3860,6 +3931,8 @@ function initApp(){
   $('hub-diag').onclick=()=>runDiagnostics();
   $('hub-clearlog').onclick=()=>{ state.events=[]; renderHubLog(); };
   $('hub-update').onclick=()=>checkForUpdate();
+  if($('tl-open')) $('tl-open').onclick=()=>setView('data');
+  if($('tl-export')) $('tl-export').onclick=()=>exportDataset();
   if($('app-ver')) $('app-ver').textContent=APP_VERSION;
   try{ if(localStorage.getItem('oss_owner')==='1'){ const fo=$('foot-ops'); if(fo) fo.style.display='inline'; } }catch(e){}
   $('tele-connect').onclick=()=>{ const u=$('tele-url').value.trim(); if(!u){toast('Enter a ws:// telemetry URL');return;} connectTeleWs(u); };
