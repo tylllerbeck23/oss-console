@@ -309,8 +309,9 @@ body.popout #app{display:block}
 .dsbox span{position:absolute;left:-1px;top:0;font:700 9px var(--mono);background:#19e6a4;color:#06121c;padding:1px 4px;border-radius:3px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
 .dscell .dsmeta{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:6px;padding:5px 8px;font-size:10.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
 .ds-filter{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:13px}
-.ds-fbtn{font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:5px 13px;color:var(--ink2);cursor:pointer}
+.ds-fbtn,.ds-utog{font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:5px 13px;color:var(--ink2);cursor:pointer}
 .ds-fbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ds-utog.on{background:var(--gold);border-color:var(--gold);color:#3a2602}
 .ds-filter select{font-size:11.5px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2)}
 .ds-sync{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:15px;box-shadow:var(--sh-sm)}
 .ds-sync .si{flex:1;min-width:240px;font-size:12px;line-height:1.5;color:var(--ink2)}
@@ -1144,6 +1145,7 @@ body.popout #app{display:block}
         <button class="ds-fbtn on" data-f="all">All</button>
         <button class="ds-fbtn" data-f="labeled">Labeled</button>
         <button class="ds-fbtn" data-f="unlabeled">Unlabeled</button>
+        <button class="ds-utog" id="ds-uncertain" title="Active learning: surface the frames the AI was least sure about — label those first to improve the model fastest">⚡ Uncertain first</button>
         <select id="ds-fsp"><option value="all">All species</option></select>
       </div>
       <div class="ds-grid" id="ds-grid"></div>
@@ -1439,7 +1441,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.7';
+const APP_VERSION='4.8';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -3005,7 +3007,7 @@ function captureToDataset(){
   captureSample({species:'Unlabeled'}).then(s=>{ if(s){ toast('Frame captured — label it on the DATA tab'); } });
 }
 
-let _dsCache=[]; let _dsFilter={mode:'all', sp:'all'};
+let _dsCache=[]; let _dsFilter={mode:'all', sp:'all', uncertain:false};
 async function renderDataset(){
   const grid=$('ds-grid'); if(!grid) return;
   let rows; try{ rows=await dbAll(); }catch(e){ rows=[]; if(_dbBad){ grid.innerHTML='<div class="note" style="padding:20px">Local image storage (IndexedDB) is unavailable in this browser/mode. Open the hosted (https) version to collect a dataset.</div>'; return; } }
@@ -3021,9 +3023,12 @@ async function renderDataset(){
   if(_dsFilter.mode==='labeled') view=view.filter(s=>s.boxes&&s.boxes.length);
   else if(_dsFilter.mode==='unlabeled') view=view.filter(s=>!s.boxes||!s.boxes.length);
   if(_dsFilter.sp!=='all') view=view.filter(s=>(s.boxes||[]).some(b=>b.species===_dsFilter.sp));
+  if(_dsFilter.uncertain) view=view.slice().sort((a,b)=>{ const al=(a.boxes&&a.boxes.length)?1:0,bl=(b.boxes&&b.boxes.length)?1:0; if(al!==bl) return al-bl; const ac=(typeof a.conf==='number')?a.conf:101,bc=(typeof b.conf==='number')?b.conf:101; return ac-bc; });   // active learning: unlabeled + least-confident first
   grid.innerHTML = view.length ? view.map(s=>{
     const bx=(s.boxes||[]).map(b=>`<div class="dsbox" style="left:${(b.x*100).toFixed(2)}%;top:${(b.y*100).toFixed(2)}%;width:${(b.w*100).toFixed(2)}%;height:${(b.h*100).toFixed(2)}%"><span>${b.species||'?'}</span></div>`).join('');
-    const lbl = s.boxes&&s.boxes.length ? (s.boxes.length+' box'+(s.boxes.length>1?'es':'')) : 'unlabeled';
+    const _unl=!(s.boxes&&s.boxes.length);
+    let lbl = _unl ? 'unlabeled' : (s.boxes.length+' box'+(s.boxes.length>1?'es':''));
+    if(_dsFilter.uncertain && _unl) lbl='⚡ '+(typeof s.conf==='number'?'label · '+Math.round(s.conf)+'%':'label me');
     return `<div class="dscell ${s.boxes&&s.boxes.length?'':'unl'}" data-id="${s.id}"><img src="${s.img}" alt="frame" loading="lazy">${bx}<div class="dsmeta"><span>${lbl}</span><span>${new Date(s.t).toLocaleDateString([], {month:'short',day:'numeric'})}</span></div></div>`;
   }).join('') : `<div class="note" style="padding:24px;text-align:center">${rows.length?'No frames match this filter.':'No frames yet. Use the AI LAB (📡 Drone feed / 📁 clip → Start AI → Correct frame or Auto-collect), or mark a fish on OPERATE — each banks a frame here.'}</div>`;
   grid.querySelectorAll('.dscell').forEach(c=>c.onclick=()=>openAnno(c.dataset.id));
@@ -3125,16 +3130,20 @@ async function exportDataset(){
   if(!labeled.length){ toast('Label at least one frame first'); return; }
   const classes=[...new Set(labeled.flatMap(s=>s.boxes.map(b=>b.species)))].sort();
   const idx=Object.fromEntries(classes.map((c,i)=>[c,i]));
-  const entries=[];
-  labeled.forEach(s=>{
+  // deterministic 80/20 train/val split (research recipe) — guarantee ≥1 val image when possible
+  const valSet=new Set();
+  if(labeled.length>=2){ if(labeled.length<5){ valSet.add(labeled.length-1); } else { labeled.forEach((s,i)=>{ if(i%5===4) valSet.add(i); }); } }
+  const entries=[]; let nTrain=0,nVal=0;
+  labeled.forEach((s,i)=>{
+    const split=valSet.has(i)?'val':'train'; if(split==='val') nVal++; else nTrain++;
     const base='img_'+s.id;
-    entries.push({name:'images/'+base+'.jpg', bytes:dataURLtoBytes(s.img)});
+    entries.push({name:'images/'+split+'/'+base+'.jpg', bytes:dataURLtoBytes(s.img)});
     const lines=s.boxes.map(b=>`${idx[b.species]} ${(b.x+b.w/2).toFixed(6)} ${(b.y+b.h/2).toFixed(6)} ${b.w.toFixed(6)} ${b.h.toFixed(6)}`).join('\n');
-    entries.push({name:'labels/'+base+'.txt', text:lines});
+    entries.push({name:'labels/'+split+'/'+base+'.txt', text:lines});
   });
-  entries.push({name:'data.yaml', text:`# OSS aerial fish dataset · ${labeled.length} images\npath: .\ntrain: images\nval: images\nnc: ${classes.length}\nnames: [${classes.map(c=>`'${c.replace(/'/g,'')}'`).join(', ')}]`});
+  entries.push({name:'data.yaml', text:`# OSS aerial dataset · ${labeled.length} images (${nTrain} train / ${nVal} val)\npath: .\ntrain: images/train\nval: images/${nVal?'val':'train'}\nnc: ${classes.length}\nnames: [${classes.map(c=>`'${c.replace(/'/g,'')}'`).join(', ')}]`});
   entries.push({name:'classes.txt', text:classes.join('\n')});
-  entries.push({name:'README.txt', text:`OSS Console training export · ${new Date().toISOString()}\nYOLO format. Import to Roboflow/CVAT or train directly:\n  yolo detect train model=yolo11n.pt data=data.yaml epochs=100 imgsz=1280\nImages: ${labeled.length} · classes: ${classes.length}`});
+  entries.push({name:'README.txt', text:`OSS Console training export · ${new Date().toISOString()}\nYOLO format · 80/20 train/val split. Train (small top-down targets → imgsz 1280):\n  yolo detect train model=yolo11n.pt data=data.yaml epochs=120 imgsz=1280\n  # also benchmark model=yolov8n.pt · tighten small objects with SAHI tiling at inference\nImages: ${labeled.length} (${nTrain} train / ${nVal} val) · classes: ${classes.length}`});
   download('OSS_dataset_'+stamp()+'.zip', zipBlob(entries));
   toast(`Exported ${labeled.length} images · ${classes.length} classes`);
 }
@@ -3947,6 +3956,7 @@ function initApp(){
   $('ds-capture').onclick=()=>captureToDataset();
   $('ds-export').onclick=()=>exportDataset();
   document.querySelectorAll('#ds-filter .ds-fbtn').forEach(b=>b.onclick=()=>{ _dsFilter.mode=b.dataset.f; document.querySelectorAll('#ds-filter .ds-fbtn').forEach(x=>x.classList.toggle('on',x===b)); renderDataset(); });
+  if($('ds-uncertain')) $('ds-uncertain').onclick=()=>{ _dsFilter.uncertain=!_dsFilter.uncertain; $('ds-uncertain').classList.toggle('on',_dsFilter.uncertain); renderDataset(); };
   $('ds-fsp').onchange=()=>{ _dsFilter.sp=$('ds-fsp').value; renderDataset(); };
   $('ds-bkexport').onclick=()=>exportAll();
   $('ds-bkimport').onclick=()=>$('ds-bkfile').click();
