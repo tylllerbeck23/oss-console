@@ -150,7 +150,34 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
 .mkp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 4px 16px rgba(14,42,66,.07),0 1px 3px rgba(14,42,66,.05)}
 .mkp b{display:block;font:800 15px var(--sans);margin-bottom:5px}
 .mkp span{color:var(--dim);font-size:13.5px;line-height:1.55}
-@media(max-width:780px){.feat,.price,.steps,.mkt-props{grid-template-columns:1fr}nav .links a{padding:8px 7px}}
+/* app-screen gallery (real app visual language) */
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0 4px}
+.galc{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:0 4px 16px rgba(14,42,66,.08),0 1px 3px rgba(14,42,66,.05);background:#fff;text-decoration:none;transition:box-shadow .16s,transform .16s}
+.galc:hover{box-shadow:0 12px 30px rgba(14,42,66,.13);transform:translateY(-2px)}
+.galv{aspect-ratio:4/3;position:relative;overflow:hidden}
+.galcap{padding:11px 13px;text-align:left}
+.galcap b{display:block;font:800 13px var(--sans);color:var(--ink)}
+.galcap em{font-style:normal;font-size:11.5px;color:var(--dim);line-height:1.45;display:block;margin-top:2px}
+.scr-dark{position:absolute;inset:0;background:radial-gradient(125% 95% at 50% 0%,#16506a,#06202e)}
+.scr-dark:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(116deg,rgba(255,255,255,.045) 0 2px,transparent 2px 24px);opacity:.6}
+.scr-map{position:absolute;inset:0;background:linear-gradient(155deg,#86b59a,#6fa6bd 55%,#4f87ab)}
+.g-grid{position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px) 0 0/25% 100%}
+.g-chip{position:absolute;font:700 8.5px var(--mono);letter-spacing:.4px;background:rgba(255,255,255,.92);color:var(--ink);padding:3px 6px;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.g-chip.g-acc{background:var(--accent);color:#fff}.g-chip.g-fire{color:#c2410c}
+.g-rec{position:absolute;left:8px;top:8px;font:700 8.5px var(--mono);letter-spacing:.6px;color:#cfeefa;display:flex;align-items:center;gap:5px;z-index:2}
+.g-recdot{width:7px;height:7px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d}
+.g-tgt{position:absolute;width:30%;height:26%;transform:translate(-50%,-50%);border:1.4px solid var(--accent2);border-radius:3px;box-shadow:0 0 12px rgba(11,179,212,.45) inset}
+.g-fish{position:absolute;left:50%;top:50%;width:46%;height:24%;transform:translate(-50%,-50%) rotate(-12deg);background:radial-gradient(60% 70% at 38% 50%,#0c2530,#05151d);border-radius:50%/60%}
+.g-lab{position:absolute;left:-1px;top:calc(100% + 3px);white-space:nowrap;font:700 7.5px var(--mono);color:#04161c;background:var(--accent2);padding:1px 4px;border-radius:3px}
+.g-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 6px 16px rgba(8,145,178,.5);z-index:2}
+.g-boat{position:absolute;left:50%;top:52%;width:17px;height:17px;border-radius:50%;transform:translate(-50%,-50%);background:#0e7490;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2}
+.g-plane{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%)}
+.g-plane svg{transform:rotate(var(--r,0deg));filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.g-plane svg path{fill:var(--c,#0e7490)}
+.g-heat{position:absolute;width:48%;height:48%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(220,38,38,.85),rgba(234,88,12,.5) 45%,transparent 72%)}
+.g-heat.sm{width:30%;height:30%}
+.g-pin{position:absolute;width:9px;height:9px;border-radius:50%;transform:translate(-50%,-50%);background:#ffd23f;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:2}
+@media(max-width:780px){.feat,.price,.steps,.mkt-props,.gal{grid-template-columns:1fr}nav .links a{padding:8px 7px}}
 </style></head>
 <body>
 
@@ -188,6 +215,7 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
     <div class="fc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><h3>Hotspot logbook</h3><p>Every fish you mark is GPS-logged and plotted as a heatmap — learn exactly where and when they show up.</p></div>
     <div class="fc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 12a7 7 0 0 1 14 0M8.4 12a3.6 3.6 0 0 1 7.2 0"/><circle cx="12" cy="12.2" r="1.3" fill="currentColor"/></svg><h3>Any drone, any feed</h3><p>HLS, WebRTC or RTMP-gateway feeds, or your webcam. Built around the DJI Mavic 3T (thermal/IR).</p></div>
     <div class="fc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="4" width="17" height="6" rx="1.5"/><rect x="3.5" y="14" width="17" height="6" rx="1.5"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/><circle cx="7" cy="17" r="1.1" fill="currentColor"/></svg><h3>Works offline</h3><p>Installs like an app and runs offline at sea. Your data stays on your device; sync to Google Sheets if you want.</p></div>
+    <div class="fc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.5c.6 0 1 .9 1 2.4v3.6l7 4.1v1.7l-7-2.1v3.4l1.8 1.4v1.3L12 18.4l-2.8 1.3v-1.3L11 17v-3.4l-7 2.1v-1.7l7-4.1V5.9c0-1.5.4-2.4 1-2.4z"/></svg><h3>Airspace awareness</h3><p>Live <b>ADS-B traffic</b> shows manned aircraft near your boat in real time — so you yield right-of-way, deconflict, and fly legal under Part&nbsp;107.</p></div>
     <div class="fc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v6l5 9a2 2 0 0 1-2 3H9a2 2 0 0 1-2-3l5-9z"/><path d="M9 3h6"/></svg><h3>Trains on your water</h3><p>Label what the AI sees to teach it your local species — the dataset is yours and only gets sharper.</p></div>
   </div>
 </div></section>
@@ -207,13 +235,39 @@ footer{padding:40px 0;border-top:1px solid var(--line);color:var(--faint);font-s
   <div class="eyebrow">See it in action</div>
   <h2>What the crew can’t see from the deck, the drone does.</h2>
   <p class="lead" style="margin:0 auto">One battery covers acres of water. The AI calls out fish, bait, and people in the water in real time — so you burn less fuel guessing and spend more time on the spots that matter.</p>
-  <a class="mkt-video" href="demo.html" aria-label="Watch the demo">
-    <div class="mkt-vinner">
-      <div class="mkt-play">▶</div>
-      <span>Watch the 30-second demo</span>
-      <small>Real aerial footage coming soon — filmed from the OSS drone kit</small>
+  <div class="gal">
+    <a class="galc" href="demo.html" aria-label="Watch the AI detection demo">
+      <div class="galv"><div class="scr-dark"></div>
+        <div class="g-rec"><span class="g-recdot"></span>REC · OSS-AI</div>
+        <div class="g-tgt" style="left:30%;top:56%"><span class="g-fish"></span></div>
+        <div class="g-tgt" style="left:64%;top:40%"><span class="g-fish"></span><span class="g-lab">SNOOK 88%</span></div>
+        <div class="g-play">▶</div>
+      </div>
+      <div class="galcap"><b>Live AI detection</b><em>Fish flagged on the camera feed in real time. ▶ watch the demo.</em></div>
+    </a>
+    <div class="galc">
+      <div class="galv"><div class="scr-map"></div><div class="g-grid"></div>
+        <div class="g-chip" style="left:8px;top:8px">CENTER 27.31°N</div>
+        <div class="g-chip g-acc" style="right:8px;top:8px">✈ 9 nearby</div>
+        <div class="g-boat"></div>
+        <div class="g-plane" style="left:26%;top:30%;--r:40deg;--c:#dc2626"><svg viewBox="0 0 24 24"><path d="M12 2.4 13.3 11 21 14.6v1.7L13.3 14l-.5 5.2 2.2 1.3v1.3L12 21.6 9 22.8v-1.3l2.2-1.3-.5-5.2L3 16.3v-1.7L10.7 11 12 2.4z"/></svg></div>
+        <div class="g-plane" style="left:68%;top:26%;--r:155deg;--c:#0e7490"><svg viewBox="0 0 24 24"><path d="M12 2.4 13.3 11 21 14.6v1.7L13.3 14l-.5 5.2 2.2 1.3v1.3L12 21.6 9 22.8v-1.3l2.2-1.3-.5-5.2L3 16.3v-1.7L10.7 11 12 2.4z"/></svg></div>
+        <div class="g-plane" style="left:56%;top:68%;--r:285deg;--c:#dc2626"><svg viewBox="0 0 24 24"><path d="M12 2.4 13.3 11 21 14.6v1.7L13.3 14l-.5 5.2 2.2 1.3v1.3L12 21.6 9 22.8v-1.3l2.2-1.3-.5-5.2L3 16.3v-1.7L10.7 11 12 2.4z"/></svg></div>
+      </div>
+      <div class="galcap"><b>Live aircraft traffic (ADS-B)</b><em>See manned aircraft near your boat — deconflict &amp; fly legal.</em></div>
     </div>
-  </a>
+    <div class="galc">
+      <div class="galv"><div class="scr-map"></div><div class="g-grid"></div>
+        <div class="g-chip g-fire" style="left:8px;top:8px">🔥 Hotspots</div>
+        <div class="g-heat" style="left:32%;top:46%"></div>
+        <div class="g-heat sm" style="left:64%;top:62%"></div>
+        <div class="g-pin" style="left:32%;top:46%"></div>
+        <div class="g-pin" style="left:64%;top:62%"></div>
+        <div class="g-boat" style="top:30%;left:48%"></div>
+      </div>
+      <div class="galcap"><b>Hotspot map</b><em>Every contact builds a GPS heatmap you fish smarter from.</em></div>
+    </div>
+  </div>
   <div class="mkt-props">
     <div class="mkp"><b>Cover more water</b><span>Fly a search pattern over acres while the boat stays put — no more running blind between spots.</span></div>
     <div class="mkp"><b>See what’s hidden</b><span>Surface fish, bait balls &amp; nervous water from above — and persons-in-water for Search &amp; Rescue.</span></div>
