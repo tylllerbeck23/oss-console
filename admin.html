@@ -104,6 +104,19 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
 .pf-catrow .cn{font:700 12.5px var(--sans);color:var(--ink)}
 .ps-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #0f2230}
 .ps-item .grow{flex:1}
+.sot{display:flex;align-items:flex-end;gap:4px;height:86px;margin:5px 0 4px;padding:7px;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.sot-bar{flex:1;height:100%;display:flex;align-items:flex-end}
+.sot-fill{width:100%;background:linear-gradient(180deg,#0bb3d4,var(--accent));border-radius:3px 3px 0 0;transition:height .4s}
+.sot-x{display:flex;justify-content:space-between;font:600 10px var(--mono);color:var(--dim);margin-bottom:4px}
+.mk-bar{height:12px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.mk-fill{height:100%;background:linear-gradient(90deg,var(--gold),#ffd98a);width:0;transition:width .4s}
+.mk-link{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #0f2230}
+.mk-link .grow{flex:1;min-width:0}
+.mk-link .mk-n{font:700 12.5px var(--sans);color:var(--ink);display:block}
+.mk-link .mk-u{color:var(--dim);font-family:var(--mono);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.mk-promo{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:8px}
+.mk-pt{font:800 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;overflow:hidden}
+.mk-px{font-size:12px;color:var(--ink);line-height:1.5;white-space:pre-wrap}
 </style></head>
 <body>
 
@@ -206,6 +219,10 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
     </div>
     <div class="pf-chart" id="pf-chart"></div>
 
+    <div class="pf-sub">📈 Sales over time <span style="font-weight:600;color:var(--dim);text-transform:none;letter-spacing:0;font-size:11px">· last 14 days</span></div>
+    <div class="sot-x" id="sot-x"></div>
+    <div class="sot" id="sot-chart"></div>
+
     <div class="pf-sub">Log a kit / hardware sale</div>
     <div class="pf-form">
       <select id="ps-prod"></select>
@@ -223,6 +240,32 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
 
     <div class="toolbar" style="margin-top:14px"><button class="btn sm" id="pf-csv">Export P&amp;L (CSV)</button></div>
     <div class="note"><b>Software units</b> = license keys you've issued (counted automatically). <b>Kit/hardware units</b> = sales you log above. Fees estimate <b>Stripe 2.9% + $0.30</b> per order. Edit prices &amp; costs to match your real numbers — everything saves on this device.</div>
+  </div>
+
+  <!-- MARKETING HUB -->
+  <div class="card">
+    <h2>📣 Marketing hub</h2>
+
+    <div class="pf-sub" style="border:none;padding-top:0;margin-top:0">🎯 Monthly goal</div>
+    <div class="row2"><div class="grow"><input id="mk-goal" type="number" min="0" placeholder="Net-profit goal this month ($)"></div><button class="btn gold" id="mk-goalsave">Set</button></div>
+    <div class="mk-bar" style="margin-top:10px"><div class="mk-fill" id="mk-goalfill"></div></div>
+    <div class="note" id="mk-goalnote" style="margin-top:6px">Set a monthly target and track your net profit toward it.</div>
+
+    <div class="pf-sub">🔗 Share &amp; sell links</div>
+    <div id="mk-links"></div>
+
+    <div class="pf-sub">✍️ Copy-paste promo kit</div>
+    <div id="mk-promo"></div>
+
+    <div class="pf-sub">📊 Tracked-link builder</div>
+    <div class="pf-form" style="grid-template-columns:1.2fr 1fr 1fr auto">
+      <select id="mk-utmbase"></select>
+      <input id="mk-utmsrc" placeholder="source · e.g. instagram">
+      <input id="mk-utmcamp" placeholder="campaign · e.g. launch">
+      <button class="btn acc" id="mk-utmgo">Build</button>
+    </div>
+    <div class="ps-item" id="mk-utmout" style="display:none"><span class="grow mono" id="mk-utmlink" style="word-break:break-all;font-size:11px"></span><button class="btn sm" id="mk-utmcopy">Copy</button></div>
+    <div class="note" style="margin-top:8px">Put a tracked link in each ad/post — Stripe shows the referring URL on every payment, so you'll see which channel actually sells.</div>
   </div>
 
   <!-- VERIFY -->
@@ -300,6 +343,7 @@ function renderProfit(){
       +'<div class="bv" style="color:'+col+'">'+money(r.net)+'</div>';
     ch.appendChild(row); });
   renderSalesList();
+  renderSalesOverTime(); renderGoal();
 }
 function renderSalesList(){
   const cat=loadCatalog(), byId={}; cat.forEach(p=>byId[p.id]=p);
@@ -345,7 +389,51 @@ function initProfit(){ if(pfInit) return; pfInit=true;
   $('pf-csv').onclick=exportPnl;
 }
 
-function unlock(){ $('gate').style.display='none'; $('app').style.display='block'; initProfit(); render(); }
+/* ===== sales-over-time chart + marketing hub (declared before unlock → TDZ-safe) ===== */
+function saleEvents(){ const cat=loadCatalog(), price={}; cat.forEach(p=>price[p.id]=p.price); const ev=[];
+  load().forEach(r=>{ if(price[r.prefix]!=null) ev.push({ts:r.ts,rev:price[r.prefix]}); });
+  loadSales().forEach(s=>{ ev.push({ts:s.ts,rev:(+s.qty||0)*(price[s.id]||0)}); }); return ev; }
+function renderSalesOverTime(){ const host=$('sot-chart'), xl=$('sot-x'); if(!host) return;
+  const DAY=86400000; const t0=new Date(); t0.setHours(0,0,0,0); const start=t0.getTime()-13*DAY;
+  const b=new Array(14).fill(0); saleEvents().forEach(e=>{ const i=Math.floor((e.ts-start)/DAY); if(i>=0&&i<14) b[i]+=e.rev; });
+  const max=Math.max(1,...b), tot=b.reduce((a,c)=>a+c,0);
+  host.innerHTML=b.map((v,i)=>{ const d=new Date(start+i*DAY); return '<div class="sot-bar" title="'+d.toLocaleDateString()+': '+money(v)+'"><div class="sot-fill" style="height:'+(v>0?Math.max(5,Math.round(v/max*100)):0)+'%"></div></div>'; }).join('');
+  if(xl) xl.innerHTML='<span>'+new Date(start).toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</span><span style="color:var(--accent)">'+money(tot)+' in 14d</span><span>today</span>'; }
+function monthNet(){ const cat=loadCatalog(); const n=new Date(); const ms=new Date(n.getFullYear(),n.getMonth(),1).getTime(); let net=0;
+  cat.forEach(p=>{ let u; if(p.kind==='software') u=load().filter(r=>r.prefix===p.id && r.ts>=ms).length; else u=loadSales().filter(s=>s.id===p.id && s.ts>=ms).reduce((a,s)=>a+(+s.qty||0),0);
+    const rev=u*p.price, cogs=u*p.cost, fees=u>0?rev*FEE_PCT+u*FEE_FIX:0; net+=rev-cogs-fees; }); return net; }
+function renderGoal(){ const fill=$('mk-goalfill'), note=$('mk-goalnote'); if(!fill) return;
+  let goal=0; try{ goal=+localStorage.getItem('oss_goal')||0; }catch(e){}
+  const net=monthNet(), pct=goal>0?Math.min(100,Math.round(net/goal*100)):0; fill.style.width=pct+'%';
+  if(goal>0){ const left=Math.max(0,goal-net); note.innerHTML='<b style="color:var(--accent)">'+money(net)+'</b> of <b>'+money(goal)+'</b> this month · '+pct+'% · '+(left>0?money(left)+' to go':'🎉 goal hit!'); }
+  else note.textContent='Set a monthly target and track your net profit toward it.'; }
+const MK_LINKS=[
+  {n:'Landing page',u:'https://ossaplication.netlify.app/'},
+  {n:'Live demo',u:'https://ossaplication.netlify.app/demo.html'},
+  {n:'Open the app',u:'https://ossaplication.netlify.app/app.html'},
+  {n:'Buy · Fishing software ($249.99)',u:'https://buy.stripe.com/4gM6oIf4I5e53ZHduU5kk02'},
+  {n:'Buy · SAR software ($749/yr)',u:'https://buy.stripe.com/8x29AUf4I5e58fX4Yo5kk00'},
+  {n:'Buy · Fishing Pro Kit ($9,999)',u:'https://buy.stripe.com/7sY4gA9KocGxcwd1Mc5kk01'},
+  {n:'Buy · SAR Responder Kit ($11,999)',u:'https://buy.stripe.com/9B6bJ22hW5e51RzeyY5kk03'} ];
+const MK_PROMO=[
+  {t:'One-liner',x:'Turn your drone into an AI fish-spotter. OSS Console streams your camera, marks fish on screen in real time, and flies automated search patterns. → ossaplication.netlify.app'},
+  {t:'Social post',x:'🎣🛩️ Stop guessing where the fish are. OSS Console turns your DJI drone into an AI fish-spotter — live on-screen detection, automated search grids, and a GPS hotspot map you fish smarter from. Lifetime license. Watch the 30-sec demo → ossaplication.netlify.app'},
+  {t:'Short email / DM',x:'Hey — I built OSS Console: it turns a DJI drone into an AI fish-spotter (and a Search & Rescue tool). Streams the drone camera, marks fish/people on screen in real time, flies automated search patterns, and logs a GPS hotspot map.\n\nSoftware is a one-time license; complete drone kits available too.\n\n2-min demo: https://ossaplication.netlify.app/demo.html\n\n— Tyler, Ocean Surveillance Services'} ];
+let _mkInit=false;
+function initMarketing(){ if(_mkInit) return; _mkInit=true;
+  const lw=$('mk-links'); if(lw){ lw.innerHTML=MK_LINKS.map((l,i)=>'<div class="mk-link"><span class="grow"><span class="mk-n">'+l.n+'</span><span class="mk-u">'+l.u+'</span></span><button class="btn sm" data-mkl="'+i+'">Copy</button></div>').join('');
+    lw.querySelectorAll('[data-mkl]').forEach(b=>b.onclick=()=>{ copy(MK_LINKS[+b.dataset.mkl].u); b.textContent='✓'; setTimeout(()=>b.textContent='Copy',1000); }); }
+  const pw=$('mk-promo'); if(pw){ pw.innerHTML=MK_PROMO.map((p,i)=>'<div class="mk-promo"><div class="mk-pt">'+p.t+' <button class="btn sm" data-mkp="'+i+'" style="float:right;margin-top:-3px">Copy</button></div><div class="mk-px">'+p.x.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div></div>').join('');
+    pw.querySelectorAll('[data-mkp]').forEach(b=>b.onclick=()=>{ copy(MK_PROMO[+b.dataset.mkp].x); b.textContent='✓'; setTimeout(()=>b.textContent='Copy',1000); }); }
+  const ub=$('mk-utmbase'); if(ub) ub.innerHTML=MK_LINKS.slice(0,3).map(l=>'<option value="'+l.u+'">'+l.n+'</option>').join('');
+  if($('mk-utmgo')) $('mk-utmgo').onclick=()=>{ const base=$('mk-utmbase').value; const src=encodeURIComponent(($('mk-utmsrc').value||'').trim()||'direct'); const camp=encodeURIComponent(($('mk-utmcamp').value||'').trim()||'general');
+    const link=base+(base.indexOf('?')>=0?'&':'?')+'utm_source='+src+'&utm_medium=social&utm_campaign='+camp; $('mk-utmlink').textContent=link; $('mk-utmout').style.display='flex'; };
+  if($('mk-utmcopy')) $('mk-utmcopy').onclick=()=>{ copy($('mk-utmlink').textContent); $('mk-utmcopy').textContent='✓'; setTimeout(()=>$('mk-utmcopy').textContent='Copy',1000); };
+  try{ const g=localStorage.getItem('oss_goal'); if(g!=null && $('mk-goal')) $('mk-goal').value=g; }catch(e){}
+  if($('mk-goalsave')) $('mk-goalsave').onclick=()=>{ try{ localStorage.setItem('oss_goal',($('mk-goal').value||'').trim()); }catch(e){} renderGoal(); };
+  renderGoal();
+}
+function unlock(){ $('gate').style.display='none'; $('app').style.display='block'; initProfit(); initMarketing(); render(); }
 function tryUnlock(){ const v=$('gate-pin').value; if(keyHash(normKey(v))===opHash()){ try{sessionStorage.setItem('oss_op_ok','1');}catch(e){} unlock(); } else { $('gate-err').textContent='Wrong passcode.'; $('gate-pin').select(); } }
 $('gate-go').onclick=tryUnlock;
 $('gate-pin').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(); });
