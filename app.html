@@ -649,7 +649,7 @@ body.popout #app{display:block}
         <div class="lxd">Grid search, ELT &amp; disaster-relief sorties</div>
       </button>
     </div>
-    <div class="lx-foot">Each edition has its own activation keys · you can switch anytime<br><a href="index.html" style="color:#8fb9c9;text-decoration:underline">About &amp; pricing</a> · <a href="demo.html" style="color:#8fb9c9;text-decoration:underline">Watch the demo</a></div>
+    <div class="lx-foot">Each edition has its own activation keys · you can switch anytime<br><a href="index.html" style="color:#8fb9c9;text-decoration:underline">About &amp; pricing</a> · <a href="demo.html" style="color:#8fb9c9;text-decoration:underline">Watch the demo</a> · <a href="#" id="lx-owner" style="color:#6f93a4;text-decoration:underline">⚙ Owner</a></div>
   </div>
 </div>
 
@@ -1441,7 +1441,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.8';
+const APP_VERSION='4.9';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -1629,10 +1629,21 @@ function applyLogo(){
 function currentEd(){ try{ return new URLSearchParams(location.search).get('ed') || localStorage.getItem('oss_edition'); }catch(e){ return null; } }
 function chooseEdition(ed){ try{ localStorage.setItem('oss_edition',ed); }catch(e){} applyProfile(ed); const l=$('launcher'); if(l) l.style.display='none'; gateLicense(); }
 function switchEdition(){ try{ localStorage.removeItem('oss_edition'); }catch(e){} location.href=location.pathname; }
+/* Owner fast-entry from the launcher: master code unlocks ALL editions on this device,
+   marks owner (reveals Operator console link), and drops straight into the app. */
+function ownerAccess(){
+  const c=prompt('Owner code:'); if(c==null) return;
+  if(keyHash(normKey(c))===MASTER_HASH){
+    try{ ['fish','sar','cap'].forEach(e=>localStorage.setItem('oss_lic_'+e, normKey(c))); localStorage.setItem('oss_owner','1'); }catch(e){}
+    const ed=currentEd()||'fish'; try{ localStorage.setItem('oss_edition',ed); }catch(e){}
+    location.href=location.pathname+'?ed='+ed;
+  } else { alert('Not recognized. (Owner code only.)'); }
+}
 function showLauncher(){ const l=$('launcher'); if(!l){ chooseEdition('fish'); return; }
   const fill=(id,t,sfx)=>{ const e=$(id); if(e) e.innerHTML=emblemMarkup(t,sfx); };
   fill('lx-em-fish','boat','LF'); fill('lx-em-sar','sar','LS'); fill('lx-em-cap','cap','LC');
-  l.style.display='flex'; l.querySelectorAll('[data-ed]').forEach(c=>c.onclick=()=>chooseEdition(c.dataset.ed)); }
+  l.style.display='flex'; l.querySelectorAll('[data-ed]').forEach(c=>c.onclick=()=>chooseEdition(c.dataset.ed));
+  const ow=$('lx-owner'); if(ow) ow.onclick=(e)=>{ e.preventDefault(); ownerAccess(); }; }
 function bootApp(){ const ed=currentEd(); if(ed && PROFILES[ed]){ applyProfile(ed); gateLicense(); } else showLauncher(); }
 function startApp(){ setTimeout(dismissBoot,2600); try{ initApp(); }catch(e){ console.error('OSS init error:',e); dismissBoot(); } }
 function showLicense(){
