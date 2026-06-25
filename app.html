@@ -135,7 +135,8 @@ label.fld .lab{display:block;font-size:10.5px;color:var(--dim);letter-spacing:.5
 #mapwrap{position:relative;min-height:0}
 #map{position:absolute;inset:0;background:#0a1620}
 .map-tools{position:absolute;top:12px;left:12px;z-index:600;display:flex;flex-direction:column;gap:7px}
-.map-tools .btn{box-shadow:var(--sh-lg);background:#fff}
+.map-tools .btn{box-shadow:var(--sh-lg);background:#fff;display:inline-flex;align-items:center;gap:6px}
+.map-tools .btn svg{width:15px;height:15px;flex:none}
 .map-badge{position:absolute;top:12px;right:12px;z-index:600;background:rgba(255,255,255,.94);border:1px solid var(--line2);border-radius:10px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--dim);box-shadow:var(--sh);backdrop-filter:blur(4px)}
 .map-badge .hl{color:var(--brand);font-weight:700}
 .crosshair-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:600;background:var(--ink);color:#fff;border-radius:10px;padding:9px 16px;font-size:12.5px;font-weight:600;letter-spacing:.2px;box-shadow:var(--sh-lg);display:none}
@@ -873,14 +874,14 @@ body.popout #app{display:block}
     <div id="mapwrap">
       <div id="map"></div>
       <div class="map-tools">
-        <button class="btn sm" id="mt-locate">◎ Me</button>
-        <button class="btn sm" id="mt-home">⛵ Vessel</button>
-        <button class="btn sm" id="mt-sat">🛰 Labels</button>
-        <button class="btn sm on" id="mt-heat">🔥 Hotspots</button>
-        <button class="btn sm" id="mt-fit">⤢ Fit Spots</button>
-        <button class="btn sm" id="mt-grid" title="GARS grid (SAR/CAP tasking)">▦ Grid</button>
-        <button class="btn sm" id="mt-steer" title="Direct crews to a point">🎯 Steer</button>
-        <button class="btn sm" id="mt-adsb" title="Live manned-aircraft traffic near your vessel (ADS-B via airplanes.live) — deconflict per Part 107">✈ Traffic</button>
+        <button class="btn sm" id="mt-locate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3.4M12 18.1v3.4M2.5 12h3.4M18.1 12h3.4"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>Me</button>
+        <button class="btn sm" id="mt-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 13h15l-2.2 4.6H6.7z"/><path d="M12 13V4.4l5.4 3.2L12 9.3"/></svg>Vessel</button>
+        <button class="btn sm" id="mt-sat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 10.4 10.4 3.6h6.6v6.6L10.2 17z"/><circle cx="13.8" cy="6.3" r="1.2"/></svg>Labels</button>
+        <button class="btn sm on" id="mt-heat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.4c2.5 2.9 3.9 4.9 3.9 7.7a3.9 3.9 0 0 1-7.8 0c0-1.1.4-2.1 1.3-3.1.3 1 .9 1.6 1.6 1.8-.4-2.1.3-4.4 1-6.4z"/></svg>Hotspots</button>
+        <button class="btn sm" id="mt-fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Fit Spots</button>
+        <button class="btn sm" id="mt-grid" title="GARS grid (SAR/CAP tasking)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h16M4 14.5h16M9.5 4v16M14.5 4v16"/></svg>Grid</button>
+        <button class="btn sm" id="mt-steer" title="Direct crews to a point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.8"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>Steer</button>
+        <button class="btn sm" id="mt-adsb" title="Live manned-aircraft traffic near your vessel (ADS-B via airplanes.live) — deconflict per Part 107"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.4 13.3 11 21 14.6v1.7L13.3 14l-.5 5.2 2.2 1.3v1.3L12 21.6 9 22.8v-1.3l2.2-1.3-.5-5.2L3 16.3v-1.7L10.7 11 12 2.4z"/></svg><span id="mt-adsb-n">Traffic</span></button>
       </div>
       <div id="steer-bar" style="display:none">
         <span id="steer-info">🎯</span>
@@ -1441,7 +1442,7 @@ body.popout #app{display:block}
    No build step; Leaflet via CDN.
    ============================================================================ */
 'use strict';
-const APP_VERSION='4.9';
+const APP_VERSION='5.0';
 const $ = id=>document.getElementById(id);
 const toast=(m)=>{ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); };
 const FT=3.28084, MPH=2.23694, MI=0.000621371;               // metric -> imperial (for display)
@@ -2080,7 +2081,7 @@ function toggleAdsb(){
   const b=$('mt-adsb'); if(b) b.classList.toggle('on',state.adsbOn);
   if(_adsbTimer){ clearInterval(_adsbTimer); _adsbTimer=null; }
   if(state.adsbOn){ fetchAdsb(true); _adsbTimer=setInterval(()=>fetchAdsb(false), 25000); }
-  else { if(state.layers.adsb) state.layers.adsb.clearLayers(); if(b) b.textContent='✈ Traffic'; }
+  else { if(state.layers.adsb) state.layers.adsb.clearLayers(); var bn=$('mt-adsb-n'); if(bn) bn.textContent='Traffic'; }
 }
 /* auto-enable grid + ADS-B on the map by default (each persists; user can turn either off) */
 function applyMapDefaults(){
@@ -2122,7 +2123,7 @@ function drawAdsb(list,c){
     L.marker([a.lat,a.lon],{icon:L.divIcon({className:'',html:'<div class="adsb-lab">'+flight+(sub?'<i>'+sub+'</i>':'')+'</div>',iconSize:[1,1],iconAnchor:[-11,7]}),interactive:false}).addTo(g);
     if(lowAlt) low++;
   });
-  const b=$('mt-adsb'); if(b && state.adsbOn) b.textContent='✈ '+(list?list.length:0)+(low?(' ⚠'+low):'');
+  var bn=$('mt-adsb-n'); if(bn && state.adsbOn) bn.textContent=(list?list.length:0)+(low?(' ⚠'+low):'');
 }
 function toggleGrid(){ state.gridOn=!state.gridOn; try{ localStorage.setItem('oss_grid', state.gridOn?'1':'0'); }catch(e){} const b=$('mt-grid'); if(b) b.classList.toggle('on',state.gridOn); if(state.gridOn) drawGrid(); else if(state.layers.grid) state.layers.grid.clearLayers(); }
 function drawGrid(){
