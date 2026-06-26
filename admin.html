@@ -158,7 +158,8 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
         <input id="m-buyer" placeholder="buyer@email.com — Stripe order #…">
       </div>
     </div>
-    <div style="margin-top:14px"><button class="btn acc" id="m-go" style="width:100%">Generate license key →</button></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12.5px;color:var(--ink);cursor:pointer"><input type="checkbox" id="m-sale" checked style="width:auto;flex:none">This is a <b>paid sale</b> — count it toward revenue <span style="color:var(--dim)">(uncheck for test / comp / your own keys)</span></label>
+    <div style="margin-top:12px"><button class="btn acc" id="m-go" style="width:100%">Generate license key →</button></div>
     <div class="keyout" id="m-out">
       <div class="k" id="m-key"></div>
       <div class="meta" id="m-meta"></div>
@@ -223,7 +224,7 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
     <div class="sot-x" id="sot-x"></div>
     <div class="sot" id="sot-chart"></div>
 
-    <div class="pf-sub">Log a kit / hardware sale</div>
+    <div class="pf-sub">Log / correct a sale</div>
     <div class="pf-form">
       <select id="ps-prod"></select>
       <input id="ps-qty" type="number" value="1" min="1" step="1" title="Quantity">
@@ -238,8 +239,8 @@ td.key{font-family:var(--mono);color:var(--accent);white-space:nowrap}
       <div style="margin-top:8px"><button class="btn sm danger" id="pf-catreset">Reset to defaults</button></div>
     </details>
 
-    <div class="toolbar" style="margin-top:14px"><button class="btn sm" id="pf-csv">Export P&amp;L (CSV)</button></div>
-    <div class="note"><b>Software units</b> = license keys you've issued (counted automatically). <b>Kit/hardware units</b> = sales you log above. Fees estimate <b>Stripe 2.9% + $0.30</b> per order. Edit prices &amp; costs to match your real numbers — everything saves on this device.</div>
+    <div class="toolbar" style="margin-top:14px"><button class="btn sm" id="pf-csv">Export P&amp;L (CSV)</button><button class="btn sm danger" id="pf-clearsales">Clear all sales</button></div>
+    <div class="note"><b>Revenue counts only sales you log here</b> — issuing a license key does <b>not</b> auto-count as a sale, so test/comp/your-own keys never inflate your numbers. When a real sale comes in: mint the key with <b>“This is a paid sale”</b> checked, or add it with <b>Log / correct a sale</b>. Fees estimate <b>Stripe 2.9% + $0.30</b> per order. Everything saves on this device.</div>
   </div>
 
   <!-- MARKETING HUB -->
@@ -316,9 +317,7 @@ function saveSales(a){ try{ localStorage.setItem('oss_sales',JSON.stringify(a));
 function periodStart(){ const n=new Date(); if(pfPeriod==='month') return new Date(n.getFullYear(),n.getMonth(),1).getTime(); if(pfPeriod==='ytd') return new Date(n.getFullYear(),0,1).getTime(); return 0; }
 function inPeriod(ts){ return ts>=periodStart(); }
 function money(n){ n=Math.round(n*100)/100; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); }
-function unitsFor(p){ return p.kind==='software'
-  ? load().filter(r=>r.prefix===p.id && inPeriod(r.ts)).length
-  : loadSales().filter(s=>s.id===p.id && inPeriod(s.ts)).reduce((a,s)=>a+(+s.qty||0),0); }
+function unitsFor(p){ return loadSales().filter(s=>s.id===p.id && inPeriod(s.ts)).reduce((a,s)=>a+(+s.qty||0),0); }  // revenue counts ONLY logged sales, never raw issued keys
 function renderProfit(){
   const cat=loadCatalog(); let tR=0,tC=0,tF=0,tU=0;
   const rows=cat.map(p=>{ const u=unitsFor(p), rev=u*p.price, cogs=u*p.cost, fees=u>0?(rev*FEE_PCT+u*FEE_FIX):0, net=rev-cogs-fees;
@@ -348,7 +347,7 @@ function renderProfit(){
 function renderSalesList(){
   const cat=loadCatalog(), byId={}; cat.forEach(p=>byId[p.id]=p);
   const sales=loadSales().slice().sort((a,b)=>b.ts-a.ts); const el=$('ps-list'); el.innerHTML='';
-  if(!sales.length){ el.innerHTML='<div style="color:#5d7585;font-size:12px">No kit/hardware sales logged yet.</div>'; return; }
+  if(!sales.length){ el.innerHTML='<div style="color:#5d7585;font-size:12px">No sales logged yet — revenue is $0. Log real sales as they come in.</div>'; return; }
   sales.forEach(s=>{ const p=byId[s.id]||{name:s.id,price:0}; const row=document.createElement('div'); row.className='ps-item';
     row.innerHTML='<span class="mono" style="color:#8aa6b6;white-space:nowrap">'+fmtDate(s.ts)+'</span>'
       +'<span class="grow">'+escapeHtml(p.name)+' ×'+s.qty+(s.buyer?(' · '+escapeHtml(s.buyer)):'')+'</span>'
@@ -387,21 +386,20 @@ function initProfit(){ if(pfInit) return; pfInit=true;
   buildCatalogEditor();
   $('pf-catreset').onclick=()=>{ if(confirm('Reset all prices & costs to defaults?')){ try{localStorage.removeItem('oss_catalog');}catch(e){} buildCatalogEditor(); refreshPsOptions(); renderProfit(); } };
   $('pf-csv').onclick=exportPnl;
+  if($('pf-clearsales')) $('pf-clearsales').onclick=()=>{ const n=loadSales().length; if(!n){ alert('No logged sales to clear.'); return; } if(confirm('Clear all '+n+' logged sale(s)? This resets revenue/profit to $0. Issued license keys are NOT affected. This cannot be undone.')){ saveSales([]); renderProfit(); } };
 }
 
 /* ===== sales-over-time chart + marketing hub (declared before unlock → TDZ-safe) ===== */
 function saleEvents(){ const cat=loadCatalog(), price={}; cat.forEach(p=>price[p.id]=p.price); const ev=[];
-  load().forEach(r=>{ if(price[r.prefix]!=null) ev.push({ts:r.ts,rev:price[r.prefix]}); });
-  loadSales().forEach(s=>{ ev.push({ts:s.ts,rev:(+s.qty||0)*(price[s.id]||0)}); }); return ev; }
+  loadSales().forEach(s=>{ ev.push({ts:s.ts,rev:(+s.qty||0)*(price[s.id]||0)}); }); return ev; }   // logged sales only
 function renderSalesOverTime(){ const host=$('sot-chart'), xl=$('sot-x'); if(!host) return;
   const DAY=86400000; const t0=new Date(); t0.setHours(0,0,0,0); const start=t0.getTime()-13*DAY;
   const b=new Array(14).fill(0); saleEvents().forEach(e=>{ const i=Math.floor((e.ts-start)/DAY); if(i>=0&&i<14) b[i]+=e.rev; });
   const max=Math.max(1,...b), tot=b.reduce((a,c)=>a+c,0);
   host.innerHTML=b.map((v,i)=>{ const d=new Date(start+i*DAY); return '<div class="sot-bar" title="'+d.toLocaleDateString()+': '+money(v)+'"><div class="sot-fill" style="height:'+(v>0?Math.max(5,Math.round(v/max*100)):0)+'%"></div></div>'; }).join('');
   if(xl) xl.innerHTML='<span>'+new Date(start).toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</span><span style="color:var(--accent)">'+money(tot)+' in 14d</span><span>today</span>'; }
-function monthNet(){ const cat=loadCatalog(); const n=new Date(); const ms=new Date(n.getFullYear(),n.getMonth(),1).getTime(); let net=0;
-  cat.forEach(p=>{ let u; if(p.kind==='software') u=load().filter(r=>r.prefix===p.id && r.ts>=ms).length; else u=loadSales().filter(s=>s.id===p.id && s.ts>=ms).reduce((a,s)=>a+(+s.qty||0),0);
-    const rev=u*p.price, cogs=u*p.cost, fees=u>0?rev*FEE_PCT+u*FEE_FIX:0; net+=rev-cogs-fees; }); return net; }
+function monthNet(){ const cat=loadCatalog(), byId={}; cat.forEach(p=>byId[p.id]=p); const n=new Date(); const ms=new Date(n.getFullYear(),n.getMonth(),1).getTime(); let net=0;
+  loadSales().filter(s=>s.ts>=ms).forEach(s=>{ const p=byId[s.id]; if(!p) return; const q=+s.qty||0, rev=q*p.price, cogs=q*p.cost, fees=q>0?rev*FEE_PCT+q*FEE_FIX:0; net+=rev-cogs-fees; }); return net; }
 function renderGoal(){ const fill=$('mk-goalfill'), note=$('mk-goalnote'); if(!fill) return;
   let goal=0; try{ goal=+localStorage.getItem('oss_goal')||0; }catch(e){}
   const net=monthNet(), pct=goal>0?Math.min(100,Math.round(net/goal*100)):0; fill.style.width=pct+'%';
@@ -464,6 +462,8 @@ $('m-go').onclick=()=>{
   let guard=0; while(list.some(r=>r.key===key)&&guard++<5) key=mintKey(prefix);
   list.unshift({ts:Date.now(),prefix:prefix,key:key,buyer:buyer,status:'active'});
   save(list);
+  // only record revenue when this is an actual paid sale (not a test/comp/owner key)
+  if(!$('m-sale') || $('m-sale').checked){ const sarr=loadSales(); sarr.push({uid:uid(),ts:Date.now(),id:prefix,qty:1,buyer:buyer}); saveSales(sarr); }
   lastKey=key; lastProd=prefix;
   $('m-key').textContent=key;
   $('m-meta').textContent=PROD[prefix].name+' · issued '+fmtDate(Date.now())+(buyer?(' · '+buyer):'');
