@@ -20,3 +20,5 @@ venv/
 # Build artifacts
 *.zip
 node_modules/
+.netlify/
+package-lock.json

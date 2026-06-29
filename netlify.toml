@@ -1,0 +1,6 @@
+# OSS Console — static site + serverless key-emailer
+[build]
+  publish = "."
+  functions = "netlify/functions"
+  # no build step — the site is a static single-file app; Netlify just installs
+  # function deps (package.json) and bundles netlify/functions/*.

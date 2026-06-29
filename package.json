@@ -1,0 +1,10 @@
+{
+  "name": "oss-console",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "OSS Console — static PWA + Netlify function that emails a unique license key per Stripe purchase.",
+  "dependencies": {
+    "stripe": "^17.7.0"
+  }
+}
